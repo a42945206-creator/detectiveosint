@@ -80,6 +80,7 @@ body {
   padding: 8px 14px;
   border-radius: 14px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
 }
 
 .nav-item.active {
@@ -577,7 +578,7 @@ function makeCase(id) {
   if (cat === "GEOINT") {
     const city = CITIES[id % CITIES.length];
     title = `GEOINT · Сектор ${String(id).padStart(3,"0")}`;
-    brief = `Спутник зафиксировал аномалию. Активируй <span class="interactive" onclick="MG.geo('\( {city}', \){clues})">сканирование</span> и определи точку.`;
+    brief = `Спутник зафиксировал аномалию. Активируй <span class="interactive" onclick="MG.geo('${city}', ${clues})">сканирование</span> и определи точку.`;
     q = "Город объекта?";
     correct = city;
     fakes = CITIES.filter(c => c !== city).sort(() => Math.random()-0.5).slice(0,2);
@@ -585,7 +586,7 @@ function makeCase(id) {
   } else if (cat === "IMINT") {
     const plane = PLANES[id % PLANES.length];
     title = `IMINT · Борт ${String(id).padStart(3,"0")}`;
-    brief = `Радар поймал неизвестный объект. Открой <span class="interactive" onclick="MG.imint('\( {plane}', \){clues})">телеметрию</span>.`;
+    brief = `Радар поймал неизвестный объект. Открой <span class="interactive" onclick="MG.imint('${plane}', ${clues})">телеметрию</span>.`;
     q = "Идентификация судна?";
     correct = plane;
     fakes = PLANES.filter(p => p !== plane).sort(() => Math.random()-0.5).slice(0,2);
@@ -673,15 +674,15 @@ const MG = {
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Найди сектор с аномалией</div>
         <div class="radar">
           <div class="radar-sweep"></div>
-          <div class="radar-blip" style="top:\( {20+Math.random()*60}%;left: \){20+Math.random()*60}%;"></div>
+          <div class="radar-blip" style="top:${20+Math.random()*60}%;left:${20+Math.random()*60}%;"></div>
         </div>
         <div class="grid-4">`;
     for (let i=0;i<16;i++) {
-      html += `<div class="cell" onclick="MG.geoClick(this,\( {i===correct},' \){city}',${total})">·</div>`;
+      html += `<div class="cell" onclick="MG.geoClick(this,${i===correct},'${city}',${total})">·</div>`;
     }
     html += `</div>`;
     if (S.has("Гео-модуль")) {
-      html += `<div style="font-size:12px;color:var(--primary);margin-top:8px;">Гео-модуль: сектор \~\( {Math.floor(correct/4)+1}- \){(correct%4)+1}</div>`;
+      html += `<div style="font-size:12px;color:var(--primary);margin-top:8px;">Гео-модуль: сектор ~${Math.floor(correct/4)+1}-${(correct%4)+1}</div>`;
     }
     html += `</div>`;
     App.browser(html);
@@ -724,7 +725,7 @@ const MG = {
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;">`;
     opts.forEach(o => {
-      html += `<button class="btn \( {o===plane?'btn-primary':'btn-outline'}" onclick="MG.imintClick(' \){o}'==='\( {plane}',' \){plane}',\( {total})"> \){o}</button>`;
+      html += `<button class="btn ${o===plane?'btn-primary':'btn-outline'}" onclick="MG.imintClick('${o}'==='${plane}','${plane}',${total})">${o}</button>`;
     });
     html += `</div></div>`;
     App.browser(html);
@@ -747,7 +748,7 @@ const MG = {
       if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("error");
       App.browser(`<div class="minigame"><div style="color:var(--danger);font-size:18px;font-weight:800;margin-bottom:10px;">ОШИБКА</div>
         <div style="font-size:13px;margin-bottom:16px;">Неверная идентификация</div>
-        <button class="btn btn-primary" onclick="MG.imint('\( {plane}', \){total})">ПОВТОРИТЬ</button></div>`);
+        <button class="btn btn-primary" onclick="MG.imint('${plane}',${total})">ПОВТОРИТЬ</button></div>`);
     }
   },
 
@@ -817,7 +818,7 @@ const MG = {
       <div style="font-size:11px;color:var(--muted);margin:8px 0 14px;">Собери улики из публичных данных</div>
       <div style="text-align:left;">`;
     items.forEach(i => {
-      html += `<div class="bubble" style="cursor:pointer;" onclick="Game.clue('\( {i.c}')"><b> \){i.t}</b></div>`;
+      html += `<div class="bubble" style="cursor:pointer;" onclick="Game.clue('${i.c}')"><b>${i.t}</b></div>`;
     });
     html += `</div></div>`;
     App.browser(html);
@@ -856,12 +857,12 @@ const Game = {
         <div class="header">
           <button class="back" onclick="S.tab='cases';App.render()">←</button>
           <div style="font-size:15px;font-weight:800;font-family:monospace;color:${c.story?'var(--gold)':'var(--primary)'};">
-            \( {c.story ? "СЮЖЕТ" : "ДЕЛО"} # \){c.id}
+            ${c.story ? "СЮЖЕТ" : "ДЕЛО"} #${c.id}
           </div>
         </div>
 
         <div class="card ${threat ? "threat-high" : ""} ${c.story ? "story" : ""}">
-          <span class="badge \( {c.story ? "badge-gold" : threat ? "badge-red" : "badge-cyan"}"> \){c.cat} · ${c.diff}</span>
+          <span class="badge ${c.story ? "badge-gold" : threat ? "badge-red" : "badge-cyan"}">${c.cat} · ${c.diff}</span>
           <div style="font-size:14px;line-height:1.55;margin-top:10px;">${c.brief}</div>
           
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
@@ -899,7 +900,7 @@ const Game = {
         </div>
         <div class="card" style="background:#060a12;">`;
       c.chat.forEach(m => {
-        term += `<div class="bubble \( {m.s}"><b> \){m.s==="bot"?"ПОДОЗРЕВАЕМЫЙ":"АГЕНТ"}:</b> ${m.t}</div>`;
+        term += `<div class="bubble ${m.s}"><b>${m.s==="bot"?"ПОДОЗРЕВАЕМЫЙ":"АГЕНТ"}:</b> ${m.t}</div>`;
       });
       term += `<div style="font-size:12px;color:var(--muted);margin-top:10px;">Изучи бриф и собери улики</div></div>`;
       App.browser(term);
@@ -946,7 +947,7 @@ const Game = {
       <div style="font-size:14px;color:var(--muted);margin-bottom:18px;">${c.q}</div>
       <div style="display:flex;flex-direction:column;gap:9px;">
         ${c.answers.map(a => `
-          <button class="btn \( {a.ok ? "btn-primary" : "btn-outline"}" onclick="Game.answer( \){a.ok})">${a.t}</button>
+          <button class="btn ${a.ok ? "btn-primary" : "btn-outline"}" onclick="Game.answer(${a.ok})">${a.t}</button>
         `).join("")}
       </div>`;
     document.getElementById("modal").classList.add("active");
@@ -1060,7 +1061,7 @@ const App = {
                 <div style="font-size:12px;color:var(--muted);">${t.desc}</div>
               </div>
             </div>
-            <button class="btn \( {owned ? "disabled" : "btn-primary"}" onclick="App.buy(' \){name}',${t.price})">
+            <button class="btn ${owned ? "disabled" : "btn-primary"}" onclick="App.buy('${name}',${t.price})">
               ${owned ? "✓ КУПЛЕНО" : `КУПИТЬ · ${t.price} ₽`}
             </button>
           </div>`;
@@ -1127,7 +1128,7 @@ const App = {
     const clues = [...S.found];
     document.getElementById("modal-body").innerHTML = `
       <div style="font-size:17px;font-weight:800;color:var(--primary);margin-bottom:14px;">
-        УЛИКИ \( {clues.length}/ \){S.case?.total || 0}
+        УЛИКИ ${clues.length}/${S.case?.total || 0}
       </div>
       <div style="max-height:240px;overflow-y:auto;margin-bottom:16px;">
         ${clues.length ? clues.map(c => `<div class="clue-item">✓ ${c}</div>`).join("") : 
