@@ -3,262 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OSINT Детектив</title>
+    <title>OSINT Detective</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg: var(--tg-theme-bg-color, #17212b);
-            --text: var(--tg-theme-text-color, #ffffff);
-            --hint: var(--tg-theme-hint-color, #708499);
-            --btn: var(--tg-theme-button-color, #5288c1);
+            --bg: var(--tg-theme-bg-color, #0f172a);
+            --text: var(--tg-theme-text-color, #f8fafc);
+            --hint: var(--tg-theme-hint-color, #94a3b8);
+            --btn: var(--tg-theme-button-color, #3b82f6);
             --btn-text: var(--tg-theme-button-text-color, #ffffff);
-            --card-bg: var(--tg-theme-secondary-bg-color, #232e3c);
-            --danger: #e53935;
-            --success: #43a047;
-            --link: #64b5f6;
-            --gold: #ffb300;
+            --card-bg: var(--tg-theme-secondary-bg-color, #1e293b);
+            --danger: #ef4444;
+            --success: #22c55e;
+            --link: #60a5fa;
+            --gold: #fbbf24;
+            --purple: #a855f7;
         }
         
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 16px; display: flex; flex-direction: column; gap: 16px; transition: all 0.3s; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        h1, h2, h3 { margin: 0 0 10px 0; font-weight: 700; letter-spacing: -0.5px; }
-        .card { background-color: var(--card-bg); padding: 16px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); line-height: 1.5; margin-bottom: 10px; }
-        .btn { background-color: var(--btn); color: var(--btn-text); border: none; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; transition: transform 0.1s, opacity 0.2s; margin-bottom: 10px; }
-        .btn:active { transform: scale(0.97); opacity: 0.8; }
-        .btn-outline { background: transparent; border: 2px solid var(--btn); color: var(--btn); }
-        .btn-success { background-color: var(--success); color: white; }
-        .btn-gold { background-color: var(--gold); color: #000; }
-        .btn-disabled { background-color: var(--hint); opacity: 0.5; pointer-events: none; }
+        /* Вкладки контента */
+        .content { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 80px; }
         
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
-        .stat-box { background: rgba(128,128,128,0.1); padding: 12px; border-radius: 10px; text-align: center; }
-        .stat-value { font-size: 20px; font-weight: bold; display: block; }
-        .stat-label { font-size: 12px; color: var(--hint); }
+        /* Навигация снизу */
+        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: var(--card-bg); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); z-index: 90; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--hint); font-size: 11px; cursor: pointer; transition: 0.2s; }
+        .nav-item.active { color: var(--btn); }
+        .nav-icon { font-size: 22px; margin-bottom: 3px; }
 
-        .hidden { display: none !important; }
+        /* Карточки */
+        .card { background: var(--card-bg); padding: 16px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin-bottom: 15px; line-height: 1.5; border: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Кнопки */
+        .btn { background: var(--btn); color: var(--btn-text); border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; transition: transform 0.1s; margin-bottom: 10px; }
+        .btn:active { transform: scale(0.97); }
+        .btn-outline { background: transparent; border: 2px solid var(--btn); color: var(--btn); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-purple { background: var(--purple); color: white; }
+        .btn-disabled { background: #334155; color: #64748b; pointer-events: none; }
+        
+        /* Заголовки */
+        h1, h2, h3 { margin: 0 0 12px 0; font-weight: 700; }
+        .category-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; background: rgba(59, 130, 246, 0.2); color: var(--link); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        /* Прогресс */
+        .progress-bar { height: 8px; background: #334155; border-radius: 4px; overflow: hidden; margin-top: 10px; }
+        .progress-fill { height: 100%; background: var(--purple); width: 0%; transition: width 0.5s; }
 
         /* Внутренний браузер */
         .app-header { display: flex; align-items: center; margin-bottom: 15px; gap: 10px; }
         .back-btn { background: transparent; border: none; color: var(--link); font-size: 24px; cursor: pointer; padding: 0; }
-        .app-content { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; border: 1px solid rgba(255,255,255,0.1); }
+        .app-content { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; }
         
-        /* Интерактивные элементы */
-        .interactive { cursor: pointer; position: relative; border-bottom: 1px dashed var(--link); display: inline-block; color: var(--link); }
-        .interactive:active { opacity: 0.5; }
-        .interactive.found { color: var(--hint); border-bottom: none; text-decoration: line-through; }
+        .interactive { cursor: pointer; border-bottom: 1px dashed var(--link); color: var(--link); display: inline-block; }
+        .interactive.found { color: var(--hint); border-bottom: none; text-decoration: line-through; pointer-events: none; }
 
         /* Блокнот */
-        .notebook { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 16px; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.3); transform: translateY(100%); transition: transform 0.3s ease-in-out; z-index: 50; }
-        .notebook.open { transform: translateY(0); }
-        .notebook-toggle { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; border-radius: 30px; background: var(--btn); color: white; border: none; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 51; display: flex; justify-content: center; align-items: center; cursor: pointer; }
-        .clue-item { font-size: 14px; margin-bottom: 8px; color: var(--success); }
+        .notebook-toggle { position: fixed; bottom: 80px; right: 16px; width: 56px; height: 56px; border-radius: 28px; background: var(--purple); color: white; border: none; font-size: 22px; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4); z-index: 51; display: none; justify-content: center; align-items: center; }
+        .clue-item { font-size: 13px; margin-bottom: 6px; color: var(--success); background: rgba(34, 197, 94, 0.1); padding: 8px; border-radius: 6px; }
 
         /* Модалки */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; opacity: 0; pointer-events: none; transition: 0.3s; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-        .modal { background: var(--card-bg); padding: 20px; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; transform: scale(0.9); transition: transform 0.2s; }
+        .modal { background: var(--card-bg); padding: 20px; border-radius: 20px; width: 100%; max-width: 400px; transform: scale(0.9); transition: 0.3s; }
         .modal-overlay.active .modal { transform: scale(1); }
-        
-        /* Фейковое фото */
-        .fake-photo { width: 100%; height: 180px; background: #333; border-radius: 8px; display: flex; justify-content: center; align-items: center; flex-direction: column; position: relative; background-image: radial-gradient(circle, #444 0%, #222 100%); }
-        .coffee-cup { font-size: 50px; margin-bottom: 10px; }
-        .cafe-sign { font-size: 18px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 4px; border: 1px solid #555; }
-        
-        /* Отзывы */
-        .review { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 0; font-size: 14px; }
-        .review:last-child { border: none; }
+
+        .fake-photo { width: 100%; height: 160px; background: #222; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #444; margin-bottom: 10px; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <!-- ЭКРАН 1: Главное меню -->
-    <div id="screen-home">
-        <h1>🕵️ OSINT Детектив</h1>
-        <div class="card">
-            <div class="stats-grid">
-                <div class="stat-box"><span class="stat-value" id="money-display">0 ₽</span><span class="stat-label">Баланс</span></div>
-                <div class="stat-box"><span class="stat-value" id="rep-display">0</span><span class="stat-label">Репутация</span></div>
-            </div>
-            <p style="margin: 10px 0 0; font-size: 14px; color: var(--hint);">Агентство "Око". Ждём твоих расследований.</p>
-        </div>
-        
-        <div id="tools-display" style="font-size: 12px; color: var(--hint); margin-bottom: 15px; text-align: center;"></div>
-
-        <button class="btn" onclick="startCase1()">Кейс №1: Пропавшая Инга</button>
-        <button class="btn" id="btn-case2" onclick="startCase2()" style="display: none;">Кейс №2: Фейковый отзыв</button>
-        <button class="btn btn-gold" onclick="openShop()">🛒 Магазин тулзов</button>
+    <div class="content" id="main-content">
+        <!-- Содержимое вкладок рендерится здесь -->
     </div>
 
-    <!-- ЭКРАН 2: Интерфейс кейса и "Браузера" -->
-    <div id="screen-case" class="hidden" style="padding-bottom: 80px;">
-        <div class="app-header">
-            <button class="back-btn" onclick="goHome()">←</button>
-            <h2 id="case-title">Соцсеть "Волна"</h2>
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchTab('cases', this)">
+            <div class="nav-icon">🗂️</div>
+            <div>Кейсы</div>
         </div>
-
-        <div class="card" id="brief-card"></div>
-
-        <!-- Контейнер для "страниц" браузера -->
-        <div id="browser-view" class="hidden">
-            <div class="app-content" id="browser-content"></div>
+        <div class="nav-item" onclick="switchTab('shop', this)">
+            <div class="nav-icon">🛒</div>
+            <div>Магазин</div>
         </div>
-
-        <!-- Кнопка сдачи отчёта -->
-        <div id="finish-section" class="hidden" style="margin-top: 20px;">
-            <button class="btn btn-success" onclick="openReport()">📝 Сдать отчёт</button>
+        <div class="nav-item" onclick="switchTab('profile', this)">
+            <div class="nav-icon">👤</div>
+            <div>Профиль</div>
         </div>
     </div>
 
-    <!-- ЭКРАН 3: Магазин -->
-    <div id="screen-shop" class="hidden">
-        <div class="app-header">
-            <button class="back-btn" onclick="goHome()">←</button>
-            <h2>Магазин тулзов</h2>
-        </div>
-        <div class="card">
-            <h3>🧠 Анти-бот (1000 ₽)</h3>
-            <p style="font-size: 13px; color: var(--hint);">Позволяет видеть скрытые паттерны ботов в профилях.</p>
-            <button class="btn" id="buy-antibot" onclick="buyTool('antibot', 1000)">Купить</button>
-        </div>
-        <div class="card">
-            <h3>🖼 Reverse Image (1500 ₽)</h3>
-            <p style="font-size: 13px; color: var(--hint);">Ищет источник фото. Поможет в будущих кейсах.</p>
-            <button class="btn" id="buy-reverse" onclick="buyTool('reverse', 1500)">Купить</button>
-        </div>
+    <button class="notebook-toggle" id="notebook-btn" onclick="toggleNotebook()">📓</button>
+
+    <!-- Модалки -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="modal-content"></div>
     </div>
 
-    <!-- Плавающая кнопка блокнота -->
-    <button class="notebook-toggle" id="notebook-btn" onclick="toggleNotebook()" style="display: none;">📓</button>
-
-    <!-- Блокнот -->
-    <div class="notebook" id="notebook">
-        <h3>📓 Блокнот детектива (<span id="clue-count">0</span>/<span id="clue-total">3</span>)</h3>
-        <div id="notebook-clues" style="margin-bottom: 10px; max-height: 150px; overflow-y: auto;"></div>
-        <button class="btn" onclick="toggleNotebook()">Закрыть</button>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО: Сдача отчёта -->
-    <div class="modal-overlay" id="report-modal">
-        <div class="modal">
-            <h2>📝 Сдача отчёта</h2>
-            <p style="font-size: 14px;" id="report-question"></p>
-            <div id="report-answers" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
-            <button class="btn" style="background: transparent; color: var(--hint); margin-top: 10px;" onclick="closeReport()">Отмена</button>
-        </div>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО: Результат -->
-    <div class="modal-overlay" id="result-modal">
-        <div class="modal">
-            <h2 id="result-title"></h2>
-            <p id="result-text" style="font-size: 15px; line-height: 1.5;"></p>
-            <button class="btn btn-success" onclick="closeResult()" style="margin-top: 15px;">Завершить</button>
-        </div>
-    </div>
-
+    <script src="cases.js"></script>
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand(); 
 
-        // Загрузка прогресса
-        let player = JSON.parse(localStorage.getItem('osint_player')) || { 
-            money: 0, 
+        // Игрок
+        let player = JSON.parse(localStorage.getItem('osint_player_v2')) || { 
+            money: 1000, // Дадим немного на старт
             reputation: 0, 
+            stars: 0,
+            level: 1,
             tools: [],
-            case1_done: false,
-            case2_done: false
+            completedCases: [] 
         };
-        
-        // Текущее состояние
-        let currentCase = 1;
+
+        let currentTab = 'cases';
+        let activeCase = null;
         let foundClues = new Set();
-        let totalClues = 3;
 
-        function saveProgress() {
-            localStorage.setItem('osint_player', JSON.stringify(player));
-        }
+        function save() { localStorage.setItem('osint_player_v2', JSON.stringify(player)); }
 
-        function updateUI() {
-            document.getElementById('money-display').innerText = `${player.money} ₽`;
-            document.getElementById('rep-display').innerText = player.reputation;
-            document.getElementById('clue-count').innerText = foundClues.size;
+        // --- РЕНДЕР ВКЛАДОК ---
+        function render() {
+            const content = document.getElementById('main-content');
             
-            // Отображение тулзов
-            let toolsText = player.tools.length > 0 ? "Твои тулзы: " + player.tools.join(', ') : "У тебя пока нет тулзов";
-            document.getElementById('tools-display').innerText = toolsText;
-
-            // Кнопки магазина
-            document.getElementById('buy-antibot').className = player.tools.includes('Анти-бот') ? 'btn btn-disabled' : 'btn';
-            document.getElementById('buy-antibot').innerText = player.tools.includes('Анти-бот') ? 'Куплено' : 'Купить';
-            
-            document.getElementById('buy-reverse').className = player.tools.includes('Reverse Image') ? 'btn btn-disabled' : 'btn';
-            document.getElementById('buy-reverse').innerText = player.tools.includes('Reverse Image') ? 'Куплено' : 'Купить';
-
-            // Открытие второго кейса
-            if (player.case1_done) {
-                document.getElementById('btn-case2').style.display = 'block';
+            if (currentTab === 'cases') {
+                content.innerHTML = `
+                    <h1>🗂️ База кейсов</h1>
+                    <div class="card">
+                        <h3>Твой уровень: ${player.level}</h3>
+                        <div class="progress-bar"><div class="progress-fill" style="width: ${(player.completedCases.length % 5) * 20}%"></div></div>
+                        <p style="font-size:12px; color:var(--hint); margin-top:5px;">До следующего уровня: ${5 - (player.completedCases.length % 5)} кейсов</p>
+                    </div>
+                    ${CASES.map(c => {
+                        const isDone = player.completedCases.includes(c.id);
+                        return `
+                        <div class="card" style="opacity: ${isDone ? '0.6' : '1'};">
+                            <span class="category-badge">${c.category}</span> • <span style="font-size:12px; color:var(--hint);">${c.difficulty}</span>
+                            <h3>${c.title}</h3>
+                            <p style="font-size:13px; color:var(--hint);">Награда: ${c.reward.money} ₽, ${c.reward.rep} Rep, ${c.reward.stars} ⭐</p>
+                            <button class="btn ${isDone ? 'btn-disabled' : ''}" onclick="startCase(${c.id})">${isDone ? '✅ Пройден' : 'Начать расследование'}</button>
+                        </div>
+                        `;
+                    }).join('')}
+                `;
+            } 
+            else if (currentTab === 'shop') {
+                content.innerHTML = `
+                    <h1>🛒 Магазин тулзов</h1>
+                    <div class="card">
+                        <h3>🧠 Анти-бот (1000 ₽)</h3>
+                        <p style="font-size:12px; color:var(--hint);">Помогает выявлять фейки.</p>
+                        <button class="btn ${player.tools.includes('Анти-бот') ? 'btn-disabled' : ''}" onclick="buyTool('Анти-бот', 1000)">
+                            ${player.tools.includes('Анти-бот') ? '✅ Куплено' : 'Купить'}
+                        </button>
+                    </div>
+                    <div class="card">
+                        <h3>🖼 Reverse Image (1500 ₽)</h3>
+                        <p style="font-size:12px; color:var(--hint);">Ищет источник фото.</p>
+                        <button class="btn ${player.tools.includes('Reverse Image') ? 'btn-disabled' : ''}" onclick="buyTool('Reverse Image', 1500)">
+                            ${player.tools.includes('Reverse Image') ? '✅ Куплено' : 'Купить'}
+                        </button>
+                    </div>
+                `;
+            }
+            else if (currentTab === 'profile') {
+                content.innerHTML = `
+                    <h1>👤 Профиль агента</h1>
+                    <div class="card" style="text-align:center;">
+                        <div style="font-size:60px; margin-bottom:10px;">🕵️</div>
+                        <h2>Агент #${tg.initDataUnsafe?.user?.id || '007'}</h2>
+                        <p style="color:var(--purple); font-weight:bold;">Звание: ${player.level < 5 ? 'Стажер' : player.level < 10 ? 'Аналитик' : 'Специалист'}</p>
+                    </div>
+                    <div class="card">
+                        <h3>📊 Статистика</h3>
+                        <p>Баланс: <b>${player.money} ₽</b></p>
+                        <p>Репутация: <b>${player.reputation}</b></p>
+                        <p>Звезды: <b>${player.stars} ⭐</b></p>
+                        <p>Кейсов закрыто: <b>${player.completedCases.length}</b></p>
+                    </div>
+                    <div class="card">
+                        <h3>🧰 Инвентарь</h3>
+                        <p>${player.tools.length ? player.tools.join(', ') : 'Пусто'}</p>
+                    </div>
+                `;
             }
         }
 
-        function goHome() {
-            document.getElementById('screen-case').classList.add('hidden');
-            document.getElementById('screen-shop').classList.add('hidden');
-            document.getElementById('browser-view').classList.add('hidden');
-            document.getElementById('screen-home').classList.remove('hidden');
-            toggleNotebook(true);
+        function switchTab(tab, el) {
+            currentTab = tab;
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            render();
+            document.getElementById('notebook-btn').style.display = 'none'; // Скрываем блокнот при смене вкладки
         }
 
-        function openShop() {
-            document.getElementById('screen-home').classList.add('hidden');
-            document.getElementById('screen-shop').classList.remove('hidden');
-        }
-
-        function buyTool(toolId, price) {
-            if (player.money >= price) {
-                player.money -= price;
-                const toolName = toolId === 'antibot' ? 'Анти-бот' : 'Reverse Image';
-                player.tools.push(toolName);
-                saveProgress();
-                updateUI();
-                tg.showAlert(`Ты купил: ${toolName}!`);
-            } else {
-                tg.showAlert("Недостаточно средств!");
-            }
-        }
-
-        // --- ЛОГИКА КЕЙСОВ ---
-        function initCase(title, briefHtml) {
-            document.getElementById('screen-home').classList.add('hidden');
-            document.getElementById('screen-shop').classList.add('hidden');
-            document.getElementById('screen-case').classList.remove('hidden');
-            document.getElementById('browser-view').classList.add('hidden');
-            document.getElementById('finish-section').classList.add('hidden');
-            document.getElementById('case-title').innerText = title;
-            document.getElementById('brief-card').innerHTML = briefHtml;
-            
+        // --- ЛОГИКА КЕЙСА ---
+        function startCase(id) {
+            activeCase = CASES.find(c => c.id === id);
             foundClues.clear();
-            document.getElementById('notebook-clues').innerHTML = '';
+            
+            document.getElementById('main-content').innerHTML = `
+                <div class="app-header">
+                    <button class="back-btn" onclick="currentTab='cases'; render();">←</button>
+                    <h2>${activeCase.title}</h2>
+                </div>
+                <div class="card">
+                    <span class="category-badge">${activeCase.category}</span>
+                    <p style="font-size:14px;">${activeCase.brief}</p>
+                </div>
+                <div id="browser-view" class="hidden">
+                    <div class="app-content" id="browser-content"></div>
+                </div>
+                <div id="finish-section" class="hidden" style="margin-top:20px;">
+                    <button class="btn btn-success" onclick="openReport()">📝 Сдать отчёт</button>
+                </div>
+            `;
             document.getElementById('notebook-btn').style.display = 'flex';
-            updateUI();
-        }
-
-        function startCase1() {
-            currentCase = 1;
-            totalClues = 3;
-            document.getElementById('clue-total').innerText = totalClues;
-            initCase("Соцсеть 'Волна'", `
-                <p style="font-size: 14px; margin: 0;"><b>Задача:</b> Клиент ищет сестру Ингу (@inga_star_). Она поехала на встречу с подругой из интернета. Найди улики: изучи <span class="interactive" onclick="openProfile()">профиль Инги</span> и её <span class="interactive" onclick="openChat()">переписку</span>.</p>
-            `);
-        }
-
-        function startCase2() {
-            currentCase = 2;
-            totalClues = 2;
-            document.getElementById('clue-total').innerText = totalClues;
-            initCase("Сайт магазина", `
-                <p style="font-size: 14px; margin: 0;"><b>Задача:</b> Магазин жалуется на накрутку отзывов. Найди доказательства, что отзывы фейковые. Изучи <span class="interactive" onclick="openReviews()">страницу отзывов</span>.</p>
-            `);
+            document.getElementById('notebook-btn').innerText = `📓 ${foundClues.size}`;
         }
 
         function showBrowser(html) {
@@ -266,187 +227,99 @@
             document.getElementById('browser-view').classList.remove('hidden');
         }
 
-        // --- КЕЙС 1 ---
-        function openProfile() {
-            showBrowser(`
-                <h3>@inga_star_</h3>
-                <p style="color: var(--hint); font-size: 14px;">12 фото • Био: люблю кофе и путешествия</p>
-                <hr style="border-color: #444; margin: 15px 0;">
-                <p><b>Последний пост</b> (3 дня назад):</p>
-                <div class="fake-photo" onclick="addClue('cafe', 'На фото найдена вывеска Café Luna')">
-                    <div class="coffee-cup">☕</div>
-                    <div class="cafe-sign">Café Luna</div>
-                </div>
-                <p style="font-size: 12px; color: var(--hint); margin-top: 5px; text-align: center;">Нажми на фото, чтобы изучить</p>
-                <button class="btn btn-outline" style="margin-top: 15px;" onclick="openChat()">Открыть переписку</button>
-            `);
-        }
-
-        function openChat() {
-            showBrowser(`
-                <h3>Переписка с @luna_friend</h3>
-                <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; font-size: 14px;">
-                    <p style="margin: 0 0 10px 0;"><b>luna_friend:</b> Приходи в наше обычное место!</p>
-                    <p style="margin: 0;"><b>Инга:</b> Ок, скоро буду.</p>
-                </div>
-                <p style="margin-top: 15px; font-size: 14px;">Кто такая эта подруга? Проверь её профиль:</p>
-                <span class="interactive" onclick="openFriendProfile()">Профиль @luna_friend</span>
-            `);
-        }
-
-        function openFriendProfile() {
-            showBrowser(`
-                <h3>@luna_friend</h3>
-                <p onclick="addClue('date', 'Аккаунт создан 5 дней назад')" style="font-size: 14px;">
-                    Дата регистрации: <span class="interactive">5 дней назад</span>
-                </p>
-                <p onclick="addClue('friends', 'У подруги 0 друзей')" style="font-size: 14px;">
-                    Друзья: <span class="interactive">0</span>
-                </p>
-                <p style="font-size: 14px; color: var(--hint);">Постов: 1</p>
-                
-                <div style="margin-top: 20px; padding: 10px; background: rgba(229, 57, 53, 0.1); border-left: 4px solid var(--danger); font-size: 13px;">
-                    <b>Анализ:</b> Свежесозданный аккаунт без друзей часто используется как приманка. Сопоставь это с фото из профиля Инги.
-                </div>
-            `);
-        }
-
-        // --- КЕЙС 2 ---
-        function openReviews() {
-            showBrowser(`
-                <h3>Отзывы (5.0 ★)</h3>
-                <div class="review">
-                    <b>Алексей</b> <span style="color: var(--gold);">★★★★★</span><br>
-                    Отличный магазин, всё супер! <span class="interactive" onclick="addClue('c2_1', 'Однотипный текст отзыва')">Рекомендую всем друзьям и знакомым!</span>
-                </div>
-                <div class="review">
-                    <b>Мария</b> <span style="color: var(--gold);">★★★★★</span><br>
-                    Отличный магазин, всё супер! <span class="interactive" onclick="addClue('c2_1', 'Однотипный текст отзыва')">Рекомендую всем друзьям и знакомым!</span>
-                </div>
-                <div class="review">
-                    <b>Иван</b> <span style="color: var(--gold);">★★★★★</span><br>
-                    Отличный магазин, всё супер! <span class="interactive" onclick="addClue('c2_1', 'Однотипный текст отзыва')">Рекомендую всем друзьям и знакомым!</span>
-                </div>
-                <p style="margin-top: 15px; font-size: 14px;">Тексты одинаковые. Проверь <span class="interactive" onclick="checkAuthors()">аккаунты авторов</span>.</p>
-            `);
-        }
-
-        function checkAuthors() {
-            showBrowser(`
-                <h3>Аккаунты авторов</h3>
-                <p style="font-size: 14px;">Дата регистрации всех трех аккаунтов: <span class="interactive" onclick="addClue('c2_2', 'Все аккаунты созданы в один день')">Вчера</span>.</p>
-                <p style="font-size: 14px;">Других отзывов: 0</p>
-                <div style="margin-top: 20px; padding: 10px; background: rgba(229, 57, 53, 0.1); border-left: 4px solid var(--danger); font-size: 13px;">
-                    <b>Анализ:</b> Это классическая накрутка. Все признаки налицо.
-                </div>
-            `);
-        }
-
-        // --- ОБЩАЯ ЛОГИКА УЛИК ---
-        function addClue(id, text) {
-            if (foundClues.has(id)) return;
+        function addClue(text) {
+            if (foundClues.has(text)) return;
+            foundClues.add(text);
             
-            foundClues.add(id);
-            
-            // Визуально помечаем
-            document.querySelectorAll('.interactive').forEach(el => {
-                if (text.includes('Café') && el.innerText.includes('Café')) el.classList.add('found');
-                if (text.includes('5 дней') && el.innerText.includes('5 дней')) el.classList.add('found');
-                if (text.includes('0 друзей') && el.innerText.includes('0')) el.classList.add('found');
-                if (text.includes('Однотипный') && el.innerText.includes('Рекомендую')) el.classList.add('found');
-                if (text.includes('один день') && el.innerText.includes('Вчера')) el.classList.add('found');
-            });
-
-            // Блокнот
-            const notebook = document.getElementById('notebook-clues');
-            const clueDiv = document.createElement('div');
-            clueDiv.className = 'clue-item';
-            clueDiv.innerHTML = `✅ ${text}`;
-            notebook.appendChild(clueDiv);
-
-            updateUI();
-            
+            document.getElementById('notebook-btn').innerText = `📓 ${foundClues.size}`;
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             
-            if (foundClues.size === totalClues) {
+            if (foundClues.size >= 1) { // Если нашли хотя бы 1 улику, разрешаем сдавать
                 document.getElementById('finish-section').classList.remove('hidden');
             }
         }
 
-        function toggleNotebook(forceClose = false) {
-            const nb = document.getElementById('notebook');
-            if (forceClose === true) nb.classList.remove('open');
-            else nb.classList.toggle('open');
-        }
-
-        // --- СДАЧА ОТЧЁТА ---
-        function openReport() {
-            toggleNotebook(true);
-            const q = document.getElementById('report-question');
-            const answers = document.getElementById('report-answers');
-            answers.innerHTML = '';
-
-            if (currentCase === 1) {
-                q.innerText = "Где сейчас Инга и что происходит?";
-                answers.innerHTML = `
-                    <button class="btn" onclick="submitAnswer(1, 'cafe')">В кафе Café Luna</button>
-                    <button class="btn btn-outline" onclick="submitAnswer(1, 'fake')">Аккаунт Инги взломали</button>
-                    <button class="btn btn-outline" onclick="submitAnswer(1, 'bot')">Она уехала к подруге домой</button>
-                `;
-            } else {
-                q.innerText = "Что происходит с отзывами?";
-                answers.innerHTML = `
-                    <button class="btn" onclick="submitAnswer(2, 'fake')">Это накрутка (боты)</button>
-                    <button class="btn btn-outline" onclick="submitAnswer(2, 'real')">Это реальные довольные клиенты</button>
-                `;
-            }
-            document.getElementById('report-modal').classList.add('active');
-        }
-
-        function closeReport() {
-            document.getElementById('report-modal').classList.remove('active');
-        }
-
-        function submitAnswer(caseNum, ans) {
-            closeReport();
-            const title = document.getElementById('result-title');
-            const text = document.getElementById('result-text');
-            let isCorrect = false;
-
-            if (caseNum === 1 && ans === 'cafe') isCorrect = true;
-            if (caseNum === 2 && ans === 'fake') isCorrect = true;
-
-            if (isCorrect) {
-                const reward = caseNum === 1 ? 500 : 1000;
-                const rep = caseNum === 1 ? 10 : 20;
-                player.money += reward;
-                player.reputation += rep;
-                
-                if (caseNum === 1) player.case1_done = true;
-                if (caseNum === 2) player.case2_done = true;
-                saveProgress();
-
-                title.innerText = "✅ Верно! Кейс закрыт!";
-                title.style.color = "var(--success)";
-                text.innerText = `Ты отлично справился! Награда:\n\n+${reward} ₽\n+${rep} Репутации`;
-            } else {
-                player.reputation = Math.max(0, player.reputation - 5);
-                saveProgress();
-                title.innerText = "❌ Ошибка!";
-                title.style.color = "var(--danger)";
-                text.innerText = `Ты сделал поспешный вывод. Пересмотри блокнот с уликами.\n\n-5 Репутации`;
-            }
+        function toggleNotebook() {
+            const modal = document.getElementById('modal-overlay');
+            const content = document.getElementById('modal-content');
             
-            updateUI();
-            document.getElementById('result-modal').classList.add('active');
+            content.innerHTML = `
+                <h2>📓 Твои улики</h2>
+                <div style="margin-bottom:15px;">
+                    ${Array.from(foundClues).map(c => `<div class="clue-item">✅ ${c}</div>`).join('') || '<p>Улик пока нет...</p>'}
+                </div>
+                <button class="btn" onclick="document.getElementById('modal-overlay').classList.remove('active')">Закрыть</button>
+            `;
+            modal.classList.add('active');
         }
 
-        function closeResult() {
-            document.getElementById('result-modal').classList.remove('active');
-            goHome();
+        // --- СДАЧА ОТЧЕТА ---
+        function openReport() {
+            const modal = document.getElementById('modal-overlay');
+            const content = document.getElementById('modal-content');
+            
+            content.innerHTML = `
+                <h2>📝 Сдача отчёта</h2>
+                <p style="font-size:14px; margin-bottom:15px;">${activeCase.questions[0].text}</p>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    ${activeCase.questions[0].answers.map(a => `
+                        <button class="btn ${a.correct ? 'btn-success' : 'btn-outline'}" onclick="submitAnswer(${a.correct})">${a.t}</button>
+                    `).join('')}
+                </div>
+                <button class="btn" style="background:transparent; color:var(--hint); margin-top:10px;" onclick="document.getElementById('modal-overlay').classList.remove('active')">Отмена</button>
+            `;
+            modal.classList.add('active');
         }
 
-        updateUI();
+        function submitAnswer(isCorrect) {
+            const modal = document.getElementById('modal-overlay');
+            const content = document.getElementById('modal-content');
+            
+            if (isCorrect) {
+                player.money += activeCase.reward.money;
+                player.reputation += activeCase.reward.rep;
+                player.stars += activeCase.reward.stars;
+                if (!player.completedCases.includes(activeCase.id)) {
+                    player.completedCases.push(activeCase.id);
+                    // Повышение уровня каждые 5 кейсов
+                    if (player.completedCases.length % 5 === 0) player.level++;
+                }
+                save();
+                
+                content.innerHTML = `
+                    <div style="text-align:center;">
+                        <h1 style="color:var(--success); font-size:50px; margin:0;">✅</h1>
+                        <h2>Кейс закрыт!</h2>
+                        <p>Ты заработал:<br><b>+${activeCase.reward.money} ₽</b><br><b>+${activeCase.reward.rep} Rep</b><br><b>+${activeCase.reward.stars} ⭐</b></p>
+                        <button class="btn" style="margin-top:15px;" onclick="document.getElementById('modal-overlay').classList.remove('active'); currentTab='cases'; render();">Продолжить</button>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div style="text-align:center;">
+                        <h1 style="color:var(--danger); font-size:50px; margin:0;">❌</h1>
+                        <h2>Ошибка</h2>
+                        <p>Ты сделал неверный вывод. Вернись к уликам и подумай еще раз.</p>
+                        <button class="btn btn-outline" style="margin-top:15px;" onclick="document.getElementById('modal-overlay').classList.remove('active')">Вернуться</button>
+                    </div>
+                `;
+            }
+        }
+
+        function buyTool(name, price) {
+            if (player.money >= price) {
+                player.money -= price;
+                player.tools.push(name);
+                save();
+                render();
+                tg.showAlert(`Куплено: ${name}`);
+            } else {
+                tg.showAlert("Недостаточно средств!");
+            }
+        }
+
+        // Инициализация
+        render();
     </script>
 </body>
 </html>
