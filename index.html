@@ -7,107 +7,65 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg: var(--tg-theme-bg-color, #0a0a0f);
-            --text: var(--tg-theme-text-color, #e2e8f0);
-            --hint: var(--tg-theme-hint-color, #64748b);
-            --primary: #00ffcc;
-            --secondary: #ff0055;
-            --card-bg: rgba(20, 25, 35, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --success: #00ff66;
-            --danger: #ff3333;
-            --gold: #ffd700;
+            --bg: #05070a; --text: #e2e8f0; --hint: #64748b; --primary: #00ffcc; --secondary: #ff0055;
+            --card-bg: rgba(15, 23, 42, 0.8); --glass-border: rgba(0, 255, 204, 0.2);
+            --success: #00ff66; --danger: #ff3333; --gold: #ffd700;
         }
-        
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        
-        body { 
-            background: var(--bg); color: var(--text); margin: 0; padding: 0; height: 100vh; 
-            display: flex; flex-direction: column; overflow: hidden;
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(0, 255, 204, 0.08), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(255, 0, 85, 0.08), transparent 25%);
-        }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
-
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; background-image: linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px); background-size: 30px 30px; }
+        ::-webkit-scrollbar { width: 0px; }
         .content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; scroll-behavior: smooth; }
 
-        .nav-bar { 
-            position: fixed; bottom: 0; left: 0; right: 0; height: 75px; 
-            background: rgba(10, 10, 15, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            display: flex; justify-content: space-around; align-items: center; 
-            border-top: 1px solid var(--glass-border); z-index: 90;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        .nav-item { 
-            display: flex; flex-direction: column; align-items: center; color: var(--hint); 
-            font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); letter-spacing: 0.5px;
-        }
-        .nav-item.active { color: var(--primary); transform: translateY(-2px); }
-        .nav-icon { font-size: 24px; margin-bottom: 4px; filter: grayscale(1); transition: 0.3s; }
-        .nav-item.active .nav-icon { filter: grayscale(0); text-shadow: 0 0 10px var(--primary); }
+        /* Навигация */
+        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 75px; background: rgba(5, 7, 10, 0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--glass-border); z-index: 90; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--hint); font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); letter-spacing: 1px; }
+        .nav-item.active { color: var(--primary); transform: translateY(-3px); }
+        .nav-icon { font-size: 20px; margin-bottom: 4px; transition: 0.3s; }
+        .nav-item.active .nav-icon { filter: drop-shadow(0 0 8px var(--primary)); }
 
-        .card { 
-            background: var(--card-bg); border: 1px solid var(--glass-border); padding: 20px; 
-            border-radius: 20px; margin-bottom: 16px; backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3); transition: transform 0.2s;
-        }
+        /* Карточки и кнопки */
+        .card { background: var(--card-bg); border: 1px solid var(--glass-border); padding: 20px; border-radius: 20px; margin-bottom: 16px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,0.5); transition: transform 0.2s; position: relative; overflow: hidden; }
         .card:active { transform: scale(0.98); }
-
-        .btn { 
-            background: linear-gradient(135deg, var(--primary), #00b3ff); color: #000; border: none; 
-            padding: 16px; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; width: 100%; 
-            transition: all 0.2s; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;
-            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
-        }
-        .btn:active { transform: scale(0.96); box-shadow: 0 2px 5px rgba(0, 255, 204, 0.3); }
+        .btn { background: linear-gradient(135deg, var(--primary), #00b3ff); color: #000; border: none; padding: 16px; border-radius: 16px; font-size: 15px; font-weight: 900; cursor: pointer; width: 100%; transition: all 0.2s; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(0, 255, 204, 0.2); display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn:active { transform: scale(0.96); }
         .btn-outline { background: transparent; border: 2px solid var(--glass-border); color: var(--text); box-shadow: none; }
         .btn-danger { background: linear-gradient(135deg, var(--secondary), #ff5500); color: white; box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3); }
-        .btn-disabled { background: #222; color: #555; pointer-events: none; box-shadow: none; }
+        .btn-success { background: linear-gradient(135deg, var(--success), #00b3ff); color: white; box-shadow: 0 4px 15px rgba(0, 255, 102, 0.3); }
+        .btn-disabled { background: #1a1a1a; color: #444; pointer-events: none; box-shadow: none; border: 1px solid #333; }
 
         h1, h2, h3 { margin: 0 0 15px 0; font-weight: 800; letter-spacing: -0.5px; }
-        h1 { font-size: 28px; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
-        
-        .badge { 
-            display: inline-block; padding: 6px 12px; border-radius: 8px; font-size: 10px; font-weight: 900; 
-            background: rgba(0, 255, 204, 0.1); color: var(--primary); text-transform: uppercase; 
-            letter-spacing: 1px; border: 1px solid rgba(0, 255, 204, 0.2); margin-bottom: 10px;
-        }
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 8px; font-size: 10px; font-weight: 900; background: rgba(0, 255, 204, 0.1); color: var(--primary); text-transform: uppercase; letter-spacing: 1px; border: 1px solid rgba(0, 255, 204, 0.2); margin-bottom: 10px; }
         .badge-hard { background: rgba(255, 0, 85, 0.1); color: var(--secondary); border-color: rgba(255,0,85,0.2); }
 
         .progress-container { margin-top: 15px; }
-        .progress-bg { height: 6px; background: #222; border-radius: 3px; overflow: hidden; }
+        .progress-bg { height: 8px; background: #111; border-radius: 4px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); width: 0%; transition: width 0.8s ease-in-out; box-shadow: 0 0 10px var(--primary); }
 
+        /* Терминал и радар */
         .app-header { display: flex; align-items: center; margin-bottom: 20px; gap: 15px; }
         .back-btn { background: transparent; border: none; color: var(--primary); font-size: 28px; cursor: pointer; padding: 0; text-shadow: 0 0 10px var(--primary); }
-        .app-content { background: rgba(0,0,0,0.4); border-radius: 16px; padding: 20px; border: 1px solid var(--glass-border); margin-bottom: 15px; font-family: 'Courier New', Courier, monospace; }
-        
-        .interactive { cursor: pointer; border-bottom: 1px dashed var(--primary); color: var(--primary); display: inline-block; transition: 0.2s; }
+        .terminal-window { background: #000; border: 1px solid #222; border-radius: 12px; overflow: hidden; margin-bottom: 15px; font-family: 'Courier New', Courier, monospace; }
+        .terminal-header { background: #111; padding: 8px 12px; display: flex; gap: 6px; border-bottom: 1px solid #222; }
+        .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .terminal-body { padding: 15px; font-size: 13px; line-height: 1.6; color: #ccc; }
+        .terminal-line { margin-bottom: 5px; }
+        .term-green { color: var(--primary); }
+
+        .interactive { cursor: pointer; border-bottom: 1px dashed var(--primary); color: var(--primary); display: inline-block; transition: 0.2s; font-weight: bold; }
         .interactive:active { background: rgba(0,255,204,0.2); }
         .interactive.found { color: var(--hint); border-bottom: none; text-decoration: line-through; pointer-events: none; }
 
-        .notebook-toggle { 
-            position: fixed; bottom: 90px; right: 20px; width: 60px; height: 60px; 
-            border-radius: 50%; background: var(--card-bg); border: 1px solid var(--primary);
-            color: var(--primary); font-size: 24px; box-shadow: 0 0 20px rgba(0, 255, 204, 0.2); 
-            z-index: 51; display: none; justify-content: center; align-items: center; cursor: pointer;
-        }
-        .clue-item { font-size: 13px; margin-bottom: 8px; color: var(--success); background: rgba(0, 255, 102, 0.1); padding: 10px; border-radius: 8px; border-left: 3px solid var(--success); }
+        /* Блокнот */
+        .notebook-toggle { position: fixed; bottom: 90px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--primary); color: var(--primary); font-size: 24px; box-shadow: 0 0 20px rgba(0, 255, 204, 0.3); z-index: 51; display: none; justify-content: center; align-items: center; cursor: pointer; backdrop-filter: blur(10px); }
+        .clue-item { font-size: 13px; margin-bottom: 8px; color: var(--success); background: rgba(0, 255, 102, 0.1); padding: 12px; border-radius: 8px; border-left: 3px solid var(--success); display: flex; align-items: center; gap: 10px; }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; opacity: 0; pointer-events: none; transition: 0.3s; }
+        /* Модалки */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; opacity: 0; pointer-events: none; transition: 0.3s; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-        .modal { background: var(--bg); border: 1px solid var(--primary); padding: 25px; border-radius: 24px; width: 100%; max-width: 400px; transform: scale(0.8) translateY(20px); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 50px rgba(0, 255, 204, 0.1); }
+        .modal { background: #0a0f18; border: 1px solid var(--primary); padding: 25px; border-radius: 24px; width: 100%; max-width: 400px; transform: scale(0.8) translateY(20px); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 50px rgba(0, 255, 204, 0.15); }
         .modal-overlay.active .modal { transform: scale(1) translateY(0); }
 
-        .fake-photo { width: 100%; height: 180px; background: #000; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #333; margin-bottom: 15px; position: relative; overflow: hidden; }
-        .fake-photo::before { content: ''; position: absolute; top:0; left:0; right:0; bottom:0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,204,0.05) 2px, rgba(0,255,204,0.05) 4px); pointer-events: none; }
-        
         .hidden { display: none !important; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate { animation: fadeIn 0.4s ease-out forwards; }
     </style>
@@ -118,7 +76,7 @@
 
     <div class="nav-bar">
         <div class="nav-item active" onclick="switchTab('cases', this)"><div class="nav-icon">🗂️</div><div>КЕЙСЫ</div></div>
-        <div class="nav-item" onclick="switchTab('shop', this)"><div class="nav-icon">🛒</div><div>МАГАЗИН</div></div>
+        <div class="nav-item" onclick="switchTab('shop', this)"><div class="nav-icon">🛒</div><div>РЫНОК</div></div>
         <div class="nav-item" onclick="switchTab('profile', this)"><div class="nav-icon">👤</div><div>АГЕНТ</div></div>
     </div>
 
@@ -128,55 +86,64 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand(); 
-        if (tg.setHeaderColor) tg.setHeaderColor('#0a0a0f');
+        if (tg.setHeaderColor) tg.setHeaderColor('#05070a');
         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
-        const CATEGORIES = ["OSINT", "GEOINT", "IMINT", "HUMINT", "SIGINT", "MASINT"];
+        const CATEGORIES = ["OSINT", "GEOINT", "IMINT", "HUMINT"];
         const CITIES = ["Токио", "Лондон", "Нью-Йорк", "Дубай", "Сингапур", "Париж", "Москва", "Сеул", "Сидней", "Берлин"];
-        const PLANES = ["Boeing 777", "Airbus A380", "F-22 Raptor", "Су-57", "Ан-225", "B-2 Spirit", "C-130 Hercules", "МиГ-31"];
-        const NAMES = ["Алекс", "Мария", "Джон", "Сара", "Иван", "Чен", "Хуан", "Анна"];
+        const PLANES = ["Boeing 777", "Airbus A380", "F-22 Raptor", "Су-57", "Ан-225", "B-2 Spirit"];
+        const NAMES = ["Алекс", "Мария", "Джон", "Сара", "Иван", "Чен"];
 
         let CASES_DB = [];
 
+        // ГЕНЕРАТОР КЕЙСОВ (2-10 улик)
         function generateCases() {
             for (let i = 1; i <= 700; i++) {
                 const cat = CATEGORIES[i % CATEGORIES.length];
-                const isHard = i > 400;
-                let title, brief, qText, answers;
+                const clueCount = Math.floor(Math.random() * 9) + 2; // От 2 до 10 улик
+                let title, brief, qText, answers, clues = [];
 
                 if (cat === "GEOINT") {
                     const city = CITIES[Math.floor(Math.random() * CITIES.length)];
-                    title = `Геолокация #${i}`;
-                    brief = `Найди город на снимке. Изучи <span class='interactive' onclick='openGeoEvidence("${city}")'>фотографию</span>.`;
-                    qText = "В каком городе сделан снимок?";
+                    title = `GEOINT: Сектор ${i}`;
+                    brief = `Определи точку съемки. Нужно собрать все улики. Доступ к <span class='interactive' onclick='openGeoEvidence("${city}", ${clueCount})'>спутниковому снимку</span>.`;
+                    qText = "Какой город на снимке?";
                     answers = CITIES.sort(() => 0.5 - Math.random()).slice(0, 3).map(c => ({t: c, correct: c === city}));
+                    // Генерируем фейковые улики для сложности
+                    for(let j=0; j<clueCount; j++) clues.push(`Фрагмент базы данных #${j+1}`);
+                    clues[0] = `Город: ${city}`;
                 } 
                 else if (cat === "IMINT") {
                     const plane = PLANES[Math.floor(Math.random() * PLANES.length)];
-                    title = `Авиация #${i}`;
-                    brief = `Определи модель самолета. Изучи <span class='interactive' onclick='openPlaneEvidence("${plane}")'>снимок</span>.`;
-                    qText = "Что это за самолет?";
+                    title = `IMINT: Борт ${i}`;
+                    brief = `Радар засек цель. Найди все детали. Открой <span class='interactive' onclick='openPlaneEvidence("${plane}", ${clueCount})'>данные телеметрии</span>.`;
+                    qText = "Идентифицируй воздушное судно:";
                     answers = PLANES.sort(() => 0.5 - Math.random()).slice(0, 3).map(p => ({t: p, correct: p === plane}));
+                    for(let j=0; j<clueCount; j++) clues.push(`Тех. параметр ${j+1}`);
+                    clues[0] = `Модель: ${plane}`;
                 }
                 else {
                     const name = NAMES[Math.floor(Math.random() * NAMES.length)];
-                    title = `Профилирование #${i}`;
-                    brief = `Вычисли фейк. Изучи <span class='interactive' onclick='openHumanEvidence("${name}")'>профиль</span>.`;
-                    qText = "Кто перед нами?";
+                    title = `HUMINT: Цель ${i}`;
+                    brief = `Проверь личность. Собери всю инфу. Изучи <span class='interactive' onclick='openHumanEvidence("${name}", ${clueCount})'>цифровой профиль</span>.`;
+                    qText = "Твой вывод по цели?";
                     answers = [{t: "Бот / Фейк", correct: true}, {t: "Реальный человек", correct: false}];
+                    for(let j=0; j<clueCount; j++) clues.push(`Аккаунт-спутник #${j+1}`);
+                    clues[0] = "Текст сгенерирован ИИ";
                 }
 
                 answers.sort(() => 0.5 - Math.random());
 
                 CASES_DB.push({
-                    id: i, title: title, category: cat, difficulty: isHard ? "Профи" : "Средне",
+                    id: i, title: title, category: cat, difficulty: i > 400 ? "PRO" : "MID",
                     brief: brief, questions: [{ text: qText, answers: answers }],
+                    totalClues: clueCount, clueTexts: clues,
                     reward: { money: 100 + (i * 10), rep: 5 + (i * 2), stars: i % 40 === 0 ? 1 : 0 }
                 });
             }
         }
 
-        let player = JSON.parse(localStorage.getItem('osint_pro_v3')) || { 
+        let player = JSON.parse(localStorage.getItem('osint_pro_v5')) || { 
             money: 500, reputation: 0, stars: 0, level: 1, tools: [], completedCases: [] 
         };
         if (CASES_DB.length === 0) generateCases(); 
@@ -185,7 +152,7 @@
         let activeCase = null;
         let foundClues = new Set();
 
-        function save() { localStorage.setItem('osint_pro_v3', JSON.stringify(player)); }
+        function save() { localStorage.setItem('osint_pro_v5', JSON.stringify(player)); }
 
         function render() {
             const content = document.getElementById('main-content');
@@ -195,29 +162,30 @@
                 
                 content.innerHTML = `
                     <div class="animate">
-                        <h1>🗂️ ОПЕРАТИВНЫЙ ШТАБ</h1>
+                        <h1 style="font-size:24px;">🛰 ОПЕРАТИВНЫЙ ШТАБ</h1>
                         <div class="card">
-                            <h3>Уровень допуска: ${player.level}</h3>
+                            <h3>УРОВЕНЬ ДОПУСКА: <span style="color:var(--primary)">${player.level}</span></h3>
                             <div class="progress-container">
                                 <div class="progress-bg"><div class="progress-fill" style="width: ${(player.completedCases.length % 5) * 20}%"></div></div>
                             </div>
-                            <p style="font-size:12px; color:var(--hint); margin-top:8px; font-weight:600;">Закрыто кейсов: ${player.completedCases.length} / 700</p>
+                            <p style="font-size:11px; color:var(--hint); margin-top:8px; font-weight:800; text-transform:uppercase; letter-spacing:1px;">Архив: ${player.completedCases.length} / 700 дел</p>
                         </div>
 
-                        <div class="card" style="border-color: var(--primary);">
-                            <span class="badge">ТЕКУЩАЯ МИССИЯ</span>
-                            <h2 style="font-size:20px; margin-bottom:5px;">${nextCase.title}</h2>
-                            <p style="font-size:12px; color:var(--hint); margin-bottom:15px;">Категория: ${nextCase.category} | Сложность: ${nextCase.difficulty}</p>
-                            <button class="btn" onclick="startCase(${nextCase.id})">НАЧАТЬ РАССЛЕДОВАНИЕ</button>
+                        <div class="card" style="border-color: rgba(0, 255, 204, 0.5); box-shadow: 0 0 20px rgba(0,255,204,0.1);">
+                            <span class="badge">ВХОДЯЩИЙ ЗАПРОС</span>
+                            <h2 style="font-size:18px; margin-bottom:5px;">${nextCase.title}</h2>
+                            <p style="font-size:11px; color:var(--hint); margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">${nextCase.category} • ${nextCase.difficulty}</p>
+                            <button class="btn" onclick="startCase(${nextCase.id})">ОТКРЫТЬ ДЕЛО</button>
                         </div>
 
                         <div class="card">
-                            <h3 style="font-size:14px; color:var(--hint);">АРХИВ ДЕЛ (последние 5)</h3>
+                            <h3 style="font-size:12px; color:var(--hint); letter-spacing:1px;">ЗАКРЫТЫЕ ДЕЛА</h3>
                             ${CASES_DB.slice(Math.max(0, nextCase.id - 6), nextCase.id - 1).reverse().map(c => `
-                                <div style="font-size:13px; padding:8px 0; border-bottom:1px solid #222; color:var(--hint);">
-                                    ✅ ${c.title} <span style="float:right;">${c.category}</span>
+                                <div style="font-size:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05); color:var(--hint); display:flex; justify-content:space-between;">
+                                    <span style="color:var(--success)">✓ ${c.title}</span>
+                                    <span>${c.category}</span>
                                 </div>
-                            `).join('') || '<p style="font-size:13px; color:var(--hint);">Нет завершенных дел</p>'}
+                            `).join('') || '<p style="font-size:12px; color:var(--hint);">Архив пуст</p>'}
                         </div>
                     </div>
                 `;
@@ -227,42 +195,37 @@
                     <div class="animate">
                         <h1>🛒 ЧЕРНЫЙ РЫНОК</h1>
                         <div class="card">
-                            <h3>🧠 Нейро-детектор</h3>
-                            <p style="font-size:12px; color:var(--hint);">Позволяет выявлять сложные бот-сети. (В разработке)</p>
-                            <button class="btn btn-outline" onclick="tg.showAlert('Скоро в продаже')">10000 ₽</button>
-                        </div>
-                        <div class="card">
-                            <h3>🛰 Доступ к спутнику</h3>
-                            <p style="font-size:12px; color:var(--hint);">Открывает эксклюзивные IMINT кейсы. (В разработке)</p>
-                            <button class="btn btn-outline" onclick="tg.showAlert('Скоро в продаже')">25000 ₽</button>
+                            <h3>🧠 Нейро-сканер</h3>
+                            <p style="font-size:12px; color:var(--hint);">Поиск скрытых ботов. (Скоро)</p>
+                            <button class="btn btn-outline" onclick="tg.showAlert('В разработке')">10000 ₽</button>
                         </div>
                     </div>
                 `;
             }
             else if (currentTab === 'profile') {
-                const rank = player.level < 5 ? 'Стажер' : player.level < 15 ? 'Аналитик' : player.level < 30 ? 'Специалист' : 'Теневой Архитектор';
+                const rank = player.level < 5 ? 'СТАЖЕР' : player.level < 15 ? 'АНАЛИТИК' : player.level < 30 ? 'СПЕЦИАЛИСТ' : 'ТЕНЕВОЙ АРХИТЕКТОР';
                 
                 content.innerHTML = `
                     <div class="animate">
-                        <h1>👤 ДОСЬЕ</h1>
-                        <div class="card" style="text-align:center; padding:30px 20px;">
-                            <div style="font-size:70px; margin-bottom:15px; text-shadow: 0 0 20px var(--primary);">🕵️</div>
-                            <h2 style="color:var(--primary);">ID: ${tg.initDataUnsafe?.user?.id || '008'}</h2>
-                            <p style="color:var(--hint); font-weight:800; letter-spacing:1px; margin-top:5px;">ЗВАНИЕ: ${rank.toUpperCase()}</p>
+                        <h1>👤 ДОСЬЕ АГЕНТА</h1>
+                        <div class="card" style="text-align:center; padding:30px 20px; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(0,255,204,0.05) 100%);">
+                            <div style="width:100px; height:100px; background:#111; border-radius:50%; border: 2px solid var(--primary); margin: 0 auto 15px; display:flex; justify-content:center; align-items:center; font-size:40px; box-shadow: 0 0 20px rgba(0,255,204,0.3);">🕵️</div>
+                            <h2 style="color:var(--primary); font-family:monospace;">ID: ${tg.initDataUnsafe?.user?.id || '008'}</h2>
+                            <p style="color:var(--text); font-weight:900; letter-spacing:2px; margin-top:5px; font-size:14px;">${rank}</p>
                         </div>
                         
                         <div class="card">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                                <div style="text-align:center;"><span style="font-size:24px;">💰</span><br><b>${player.money} ₽</b></div>
-                                <div style="text-align:center;"><span style="font-size:24px;">🎖</span><br><b>${player.reputation}</b></div>
-                                <div style="text-align:center;"><span style="font-size:24px;">⭐</span><br><b>${player.stars}</b></div>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px; text-align:center;">
+                                <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:10px;"><span style="font-size:20px;">💰</span><br><b style="font-size:14px;">${player.money} ₽</b></div>
+                                <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:10px;"><span style="font-size:20px;">🎖</span><br><b style="font-size:14px;">${player.reputation}</b></div>
+                                <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:10px;"><span style="font-size:20px;">⭐</span><br><b style="font-size:14px;">${player.stars}</b></div>
                             </div>
                             
-                            <h3 style="font-size:14px; margin-top:20px;">ДО СЛЕДУЮЩЕЙ ЗВЕЗДЫ</h3>
+                            <h3 style="font-size:11px; margin-top:20px; color:var(--hint); letter-spacing:1px;">ПРОГРЕСС ДО ЗВЕЗДЫ</h3>
                             <div class="progress-container">
                                 <div class="progress-bg"><div class="progress-fill" style="width: ${(player.completedCases.length % 40) / 40 * 100}%"></div></div>
                             </div>
-                            <p style="font-size:11px; color:var(--hint); margin-top:8px; text-align:right;">Закрыто ${player.completedCases.length % 40} из 40</p>
+                            <p style="font-size:10px; color:var(--hint); margin-top:8px; text-align:right;">${player.completedCases.length % 40} / 40</p>
                         </div>
                     </div>
                 `;
@@ -286,22 +249,33 @@
                 <div class="animate">
                     <div class="app-header">
                         <button class="back-btn" onclick="currentTab='cases'; render();">←</button>
-                        <h2 style="font-size:20px; margin:0;">ДЕЛО #${activeCase.id}</h2>
+                        <h2 style="font-size:18px; margin:0; font-family:monospace; color:var(--primary);">ДЕЛО #${activeCase.id}</h2>
                     </div>
                     <div class="card" style="border-left: 4px solid var(--secondary);">
                         <span class="badge badge-hard">${activeCase.category}</span>
-                        <p style="font-size:15px; margin-top:10px;">${activeCase.brief}</p>
+                        <p style="font-size:14px; margin-top:10px; line-height:1.5;">${activeCase.brief}</p>
+                        
+                        <!-- Индикатор улик -->
+                        <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--glass-border);">
+                            <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; margin-bottom:5px;">
+                                <span>СОБРАНО УЛИК:</span>
+                                <span id="clue-counter" style="color:var(--primary)">0 / ${activeCase.totalClues}</span>
+                            </div>
+                            <div class="progress-bg"><div class="progress-fill" id="clue-progress" style="width: 0%"></div></div>
+                        </div>
                     </div>
+                    
                     <div id="browser-view" class="hidden">
-                        <div class="app-content" id="browser-content"></div>
+                        <div id="browser-content"></div>
                     </div>
-                    <div id="finish-section" class="hidden" style="margin-top:20px;">
-                        <button class="btn btn-danger" onclick="openReport()">СДАТЬ ОТЧЁТ</button>
+                    
+                    <div id="finish-section" style="margin-top:20px; display:none;">
+                        <button class="btn btn-disabled" id="submit-btn" onclick="openReport()">⚠️ НАЙДЕНО НЕ ВСЁ</button>
                     </div>
                 </div>
             `;
             document.getElementById('notebook-btn').style.display = 'flex';
-            document.getElementById('notebook-btn').innerText = `📓 ${foundClues.size}`;
+            document.getElementById('notebook-btn').innerText = `📓 0`;
         }
 
         function showBrowser(html) {
@@ -313,43 +287,94 @@
         function addClue(text) {
             if (foundClues.has(text)) return;
             foundClues.add(text);
+            
+            // Обновляем счетчики
             document.getElementById('notebook-btn').innerText = `📓 ${foundClues.size}`;
+            document.getElementById('clue-counter').innerText = `${foundClues.size} / ${activeCase.totalClues}`;
+            document.getElementById('clue-progress').style.width = `${(foundClues.size / activeCase.totalClues) * 100}%`;
+            
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            document.getElementById('finish-section').classList.remove('hidden');
+
+            // Показываем кнопку сдачи отчета (но она может быть заблокирована)
+            const finishSection = document.getElementById('finish-section');
+            const submitBtn = document.getElementById('submit-btn');
+            finishSection.style.display = 'block';
+
+            // Если собраны ВСЕ улики
+            if (foundClues.size >= activeCase.totalClues) {
+                submitBtn.className = 'btn btn-danger animate';
+                submitBtn.innerText = '🚨 СДАТЬ ОТЧЁТ';
+            } else {
+                submitBtn.className = 'btn btn-disabled';
+                submitBtn.innerText = `⚠️ НАЙДЕНО ${foundClues.size} ИЗ ${activeCase.totalClues}`;
+            }
+            
+            toggleNotebook();
         }
 
-        function openGeoEvidence(city) {
-            showBrowser(`
-                <h3 style="color:var(--primary);">СПУТНИКОВЫЙ СНИМОК</h3>
-                <div class="fake-photo" onclick="addClue('Найдена архитектурная достопримечательность')">
-                    <div style="font-size:50px;">🏙️</div>
-                    <div style="font-size:12px; color:var(--primary);">[Анализ силуэтов зданий...]</div>
-                </div>
-                <p style="font-size:13px;">На заднем плане виден уникальный небоскреб. Поиск по базе определяет локацию как: <span class="interactive" onclick="addClue('Город: ${city}')">${city}</span></p>
-            `);
-        }
+        // --- ИНТЕРФЕЙСЫ УЛИК ---
 
-        function openPlaneEvidence(plane) {
-            showBrowser(`
-                <h3 style="color:var(--primary);">IMINT АНАЛИЗ</h3>
-                <div class="fake-photo" onclick="addClue('Определен тип двигателей')">
-                    <div style="font-size:50px;">✈️</div>
-                </div>
-                <p style="font-size:13px;">Анализ формы крыла и двигателей указывает на модель: <span class="interactive" onclick="addClue('Модель: ${plane}')">${plane}</span></p>
-            `);
-        }
+        function openGeoEvidence(city, total) {
+            let extraClues = '';
+            for(let i=1; i<total; i++) {
+                extraClues += `<p style="font-size:13px; margin-bottom:10px; cursor:pointer;" onclick="addClue('Архитектурный маркер #${i}')"><span class="interactive">Скрытая деталь #${i}</span> (обработать)</p>`;
+            }
 
-        function openHumanEvidence(name) {
             showBrowser(`
-                <h3 style="color:var(--primary);">ПРОФИЛЬ ПОДОЗРЕВАЕМОГО</h3>
-                <div style="display:flex; gap:15px; margin-bottom:15px;">
-                    <div style="width:60px; height:60px; background:#222; border-radius:50%; border:2px solid var(--primary); display:flex; justify-content:center; align-items:center; font-size:24px;">👤</div>
-                    <div>
-                        <p style="margin:0; font-weight:bold;">${name}</p>
-                        <p style="margin:5px 0 0 0; font-size:12px; color:var(--hint);">Активность: 24/7</p>
+                <div class="terminal-window animate">
+                    <div class="terminal-header"><div class="terminal-dot" style="background:#ff5f56"></div><div class="terminal-dot" style="background:#ffbd2e"></div><div class="terminal-dot" style="background:#27c93f"></div></div>
+                    <div class="terminal-body">
+                        <div class="terminal-line term-green">> ЗАПУСК GEOINT_MODULE v5.0...</div>
+                        <div class="terminal-line">> Извлечение метаданных фото...</div>
+                        <div class="terminal-line">> Поиск по базе архитектуры...</div>
                     </div>
                 </div>
-                <p style="font-size:13px;">Проверка текста выявила: <span class="interactive" onclick="addClue('Текст сгенерирован ИИ')">неестественные паттерны речи</span>.</p>
+                <div class="card" style="background:#0f172a; padding:15px;">
+                    <p style="font-size:13px; line-height:1.6;">Спутник зафиксировал уникальное строение. Сопоставление с базой дает локацию: <span class="interactive" onclick="addClue('Город: ${city}')">${city}</span></p>
+                    ${extraClues}
+                </div>
+            `);
+        }
+
+        function openPlaneEvidence(plane, total) {
+            let extraClues = '';
+            for(let i=1; i<total; i++) {
+                extraClues += `<p style="font-size:13px; margin-bottom:10px; cursor:pointer;" onclick="addClue('Характеристика ${i}')"><span class="interactive">Данные двигателя #${i}</span> (обработать)</p>`;
+            }
+
+            showBrowser(`
+                <div class="terminal-window animate">
+                    <div class="terminal-header"><div class="terminal-dot" style="background:#ff5f56"></div><div class="terminal-dot" style="background:#ffbd2e"></div><div class="terminal-dot" style="background:#27c93f"></div></div>
+                    <div class="terminal-body">
+                        <div class="terminal-line term-green">> РАДАР АКТИВЕН...</div>
+                        <div class="terminal-line">> Захват цели. Обработка силуэта...</div>
+                    </div>
+                </div>
+                <div class="card" style="background:#0f172a; padding:15px;">
+                    <p style="font-size:13px; line-height:1.6;">Анализ теплового следа указывает на модель: <span class="interactive" onclick="addClue('Модель: ${plane}')">${plane}</span></p>
+                    ${extraClues}
+                </div>
+            `);
+        }
+
+        function openHumanEvidence(name, total) {
+            let extraClues = '';
+            for(let i=1; i<total; i++) {
+                extraClues += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #222; cursor:pointer;" onclick="addClue('Подозрительный паттерн #${i}')"><span style="font-size:13px;">Пост #${i}</span><span class="interactive" style="font-size:12px;">Анализ</span></div>`;
+            }
+
+            showBrowser(`
+                <div class="card" style="background:#0f172a; padding:15px;">
+                    <div style="display:flex; gap:15px; align-items:center; margin-bottom:15px;">
+                        <div style="width:50px; height:50px; background:linear-gradient(135deg, var(--primary), var(--secondary)); border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:20px;">👤</div>
+                        <div>
+                            <p style="margin:0; font-weight:bold; font-size:15px;">${name}</p>
+                            <p style="margin:2px 0 0 0; font-size:11px; color:var(--primary);">@${name.toLowerCase()}_${activeCase.id}</p>
+                        </div>
+                    </div>
+                    <p style="font-size:13px; line-height:1.6;">Главная улика: <span class="interactive" onclick="addClue('Текст сгенерирован ИИ')">неестественные паттерны речи</span></p>
+                    ${extraClues}
+                </div>
             `);
         }
 
@@ -357,7 +382,7 @@
             const modal = document.getElementById('modal-overlay');
             const content = document.getElementById('modal-content');
             content.innerHTML = `
-                <h2 style="color:var(--primary);">📓 УЛИКИ</h2>
+                <h2 style="color:var(--primary);">📓 УЛИКИ (${foundClues.size}/${activeCase.totalClues})</h2>
                 <div style="margin-bottom:20px; max-height:200px; overflow-y:auto;">
                     ${Array.from(foundClues).map(c => `<div class="clue-item">✅ ${c}</div>`).join('') || '<p style="color:var(--hint);">Пока пусто...</p>'}
                 </div>
@@ -367,6 +392,9 @@
         }
 
         function openReport() {
+            // Проверка на всякий случай (если нажали через консоль)
+            if (foundClues.size < activeCase.totalClues) return;
+
             const modal = document.getElementById('modal-overlay');
             const content = document.getElementById('modal-content');
             content.innerHTML = `
@@ -393,10 +421,7 @@
                 let gotStar = false;
                 if (!player.completedCases.includes(activeCase.id)) {
                     player.completedCases.push(activeCase.id);
-                    if (player.completedCases.length % 40 === 0) {
-                        player.stars += 1;
-                        gotStar = true;
-                    }
+                    if (player.completedCases.length % 40 === 0) { player.stars += 1; gotStar = true; }
                     if (player.completedCases.length % 5 === 0) player.level++;
                 }
                 save();
@@ -416,7 +441,7 @@
                     <div style="text-align:center;">
                         <div style="font-size:60px; margin-bottom:10px;">❌</div>
                         <h2 style="color:var(--danger);">ПРОВАЛ</h2>
-                        <p style="font-size:14px; color:var(--hint); margin:15px 0;">Вывод неверен. Собери больше улик.</p>
+                        <p style="font-size:14px; color:var(--hint); margin:15px 0;">Вывод неверен.</p>
                         <button class="btn btn-outline" style="margin-top:10px;" onclick="document.getElementById('modal-overlay').classList.remove('active')">ВЕРНУТЬСЯ</button>
                     </div>
                 `;
