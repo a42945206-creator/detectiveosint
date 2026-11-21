@@ -41,7 +41,7 @@
         .progress-bg { height: 8px; background: #111; border-radius: 4px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); width: 0%; transition: width 0.8s ease-in-out; box-shadow: 0 0 10px var(--primary); }
 
-        /* Терминал и радар */
+        /* Терминал */
         .app-header { display: flex; align-items: center; margin-bottom: 20px; gap: 15px; }
         .back-btn { background: transparent; border: none; color: var(--primary); font-size: 28px; cursor: pointer; padding: 0; text-shadow: 0 0 10px var(--primary); }
         .terminal-window { background: #000; border: 1px solid #222; border-radius: 12px; overflow: hidden; margin-bottom: 15px; font-family: 'Courier New', Courier, monospace; }
@@ -96,30 +96,31 @@
 
         let CASES_DB = [];
 
-        // ГЕНЕРАТОР КЕЙСОВ (2-10 улик)
+        // Генератор кейсов (железобетонные ответы)
         function generateCases() {
             for (let i = 1; i <= 700; i++) {
                 const cat = CATEGORIES[i % CATEGORIES.length];
-                const clueCount = Math.floor(Math.random() * 9) + 2; // От 2 до 10 улик
-                let title, brief, qText, answers, clues = [];
+                const clueCount = Math.floor(Math.random() * 9) + 2; // 2-10 улик
+                let title, brief, qText, correctAnswer, fakeAnswers = [], clues = [];
 
                 if (cat === "GEOINT") {
                     const city = CITIES[Math.floor(Math.random() * CITIES.length)];
                     title = `GEOINT: Сектор ${i}`;
-                    brief = `Определи точку съемки. Нужно собрать все улики. Доступ к <span class='interactive' onclick='openGeoEvidence("${city}", ${clueCount})'>спутниковому снимку</span>.`;
+                    brief = `Определи точку съемки. Доступ к <span class='interactive' onclick='openGeoEvidence("${city}", ${clueCount})'>спутниковому снимку</span>.`;
                     qText = "Какой город на снимке?";
-                    answers = CITIES.sort(() => 0.5 - Math.random()).slice(0, 3).map(c => ({t: c, correct: c === city}));
-                    // Генерируем фейковые улики для сложности
-                    for(let j=0; j<clueCount; j++) clues.push(`Фрагмент базы данных #${j+1}`);
+                    correctAnswer = city;
+                    fakeAnswers = CITIES.filter(c => c !== city).sort(() => 0.5 - Math.random()).slice(0, 2);
+                    for(let j=1; j<clueCount; j++) clues.push(`Архитектурный маркер #${j}`);
                     clues[0] = `Город: ${city}`;
                 } 
                 else if (cat === "IMINT") {
                     const plane = PLANES[Math.floor(Math.random() * PLANES.length)];
                     title = `IMINT: Борт ${i}`;
-                    brief = `Радар засек цель. Найди все детали. Открой <span class='interactive' onclick='openPlaneEvidence("${plane}", ${clueCount})'>данные телеметрии</span>.`;
+                    brief = `Радар засек цель. Открой <span class='interactive' onclick='openPlaneEvidence("${plane}", ${clueCount})'>данные телеметрии</span>.`;
                     qText = "Идентифицируй воздушное судно:";
-                    answers = PLANES.sort(() => 0.5 - Math.random()).slice(0, 3).map(p => ({t: p, correct: p === plane}));
-                    for(let j=0; j<clueCount; j++) clues.push(`Тех. параметр ${j+1}`);
+                    correctAnswer = plane;
+                    fakeAnswers = PLANES.filter(p => p !== plane).sort(() => 0.5 - Math.random()).slice(0, 2);
+                    for(let j=1; j<clueCount; j++) clues.push(`Данные двигателя #${j}`);
                     clues[0] = `Модель: ${plane}`;
                 }
                 else {
@@ -127,12 +128,18 @@
                     title = `HUMINT: Цель ${i}`;
                     brief = `Проверь личность. Собери всю инфу. Изучи <span class='interactive' onclick='openHumanEvidence("${name}", ${clueCount})'>цифровой профиль</span>.`;
                     qText = "Твой вывод по цели?";
-                    answers = [{t: "Бот / Фейк", correct: true}, {t: "Реальный человек", correct: false}];
-                    for(let j=0; j<clueCount; j++) clues.push(`Аккаунт-спутник #${j+1}`);
+                    correctAnswer = "Бот / Фейк";
+                    fakeAnswers = ["Реальный человек"];
+                    for(let j=1; j<clueCount; j++) clues.push(`Подозрительный паттерн #${j}`);
                     clues[0] = "Текст сгенерирован ИИ";
                 }
 
-                answers.sort(() => 0.5 - Math.random());
+                // Формируем массив ответов (1 правильный, 2 фейка) и мешаем
+                let answers = [
+                    { t: correctAnswer, correct: true },
+                    { t: fakeAnswers[0], correct: false },
+                    { t: fakeAnswers[1] || "Неизвестно", correct: false }
+                ].sort(() => 0.5 - Math.random());
 
                 CASES_DB.push({
                     id: i, title: title, category: cat, difficulty: i > 400 ? "PRO" : "MID",
@@ -143,7 +150,7 @@
             }
         }
 
-        let player = JSON.parse(localStorage.getItem('osint_pro_v5')) || { 
+        let player = JSON.parse(localStorage.getItem('osint_pro_v6')) || { 
             money: 500, reputation: 0, stars: 0, level: 1, tools: [], completedCases: [] 
         };
         if (CASES_DB.length === 0) generateCases(); 
@@ -152,7 +159,7 @@
         let activeCase = null;
         let foundClues = new Set();
 
-        function save() { localStorage.setItem('osint_pro_v5', JSON.stringify(player)); }
+        function save() { localStorage.setItem('osint_pro_v6', JSON.stringify(player)); }
 
         function render() {
             const content = document.getElementById('main-content');
@@ -255,7 +262,6 @@
                         <span class="badge badge-hard">${activeCase.category}</span>
                         <p style="font-size:14px; margin-top:10px; line-height:1.5;">${activeCase.brief}</p>
                         
-                        <!-- Индикатор улик -->
                         <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--glass-border);">
                             <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; margin-bottom:5px;">
                                 <span>СОБРАНО УЛИК:</span>
@@ -288,19 +294,16 @@
             if (foundClues.has(text)) return;
             foundClues.add(text);
             
-            // Обновляем счетчики
             document.getElementById('notebook-btn').innerText = `📓 ${foundClues.size}`;
             document.getElementById('clue-counter').innerText = `${foundClues.size} / ${activeCase.totalClues}`;
             document.getElementById('clue-progress').style.width = `${(foundClues.size / activeCase.totalClues) * 100}%`;
             
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
-            // Показываем кнопку сдачи отчета (но она может быть заблокирована)
             const finishSection = document.getElementById('finish-section');
             const submitBtn = document.getElementById('submit-btn');
             finishSection.style.display = 'block';
 
-            // Если собраны ВСЕ улики
             if (foundClues.size >= activeCase.totalClues) {
                 submitBtn.className = 'btn btn-danger animate';
                 submitBtn.innerText = '🚨 СДАТЬ ОТЧЁТ';
@@ -312,25 +315,21 @@
             toggleNotebook();
         }
 
-        // --- ИНТЕРФЕЙСЫ УЛИК ---
-
         function openGeoEvidence(city, total) {
             let extraClues = '';
             for(let i=1; i<total; i++) {
                 extraClues += `<p style="font-size:13px; margin-bottom:10px; cursor:pointer;" onclick="addClue('Архитектурный маркер #${i}')"><span class="interactive">Скрытая деталь #${i}</span> (обработать)</p>`;
             }
-
             showBrowser(`
                 <div class="terminal-window animate">
                     <div class="terminal-header"><div class="terminal-dot" style="background:#ff5f56"></div><div class="terminal-dot" style="background:#ffbd2e"></div><div class="terminal-dot" style="background:#27c93f"></div></div>
                     <div class="terminal-body">
-                        <div class="terminal-line term-green">> ЗАПУСК GEOINT_MODULE v5.0...</div>
+                        <div class="terminal-line term-green">> ЗАПУСК GEOINT_MODULE v6.0...</div>
                         <div class="terminal-line">> Извлечение метаданных фото...</div>
-                        <div class="terminal-line">> Поиск по базе архитектуры...</div>
                     </div>
                 </div>
                 <div class="card" style="background:#0f172a; padding:15px;">
-                    <p style="font-size:13px; line-height:1.6;">Спутник зафиксировал уникальное строение. Сопоставление с базой дает локацию: <span class="interactive" onclick="addClue('Город: ${city}')">${city}</span></p>
+                    <p style="font-size:13px; line-height:1.6;">Спутник зафиксировал уникальное строение. База данных дает локацию: <span class="interactive" onclick="addClue('Город: ${city}')">${city}</span></p>
                     ${extraClues}
                 </div>
             `);
@@ -341,13 +340,12 @@
             for(let i=1; i<total; i++) {
                 extraClues += `<p style="font-size:13px; margin-bottom:10px; cursor:pointer;" onclick="addClue('Характеристика ${i}')"><span class="interactive">Данные двигателя #${i}</span> (обработать)</p>`;
             }
-
             showBrowser(`
                 <div class="terminal-window animate">
                     <div class="terminal-header"><div class="terminal-dot" style="background:#ff5f56"></div><div class="terminal-dot" style="background:#ffbd2e"></div><div class="terminal-dot" style="background:#27c93f"></div></div>
                     <div class="terminal-body">
                         <div class="terminal-line term-green">> РАДАР АКТИВЕН...</div>
-                        <div class="terminal-line">> Захват цели. Обработка силуэта...</div>
+                        <div class="terminal-line">> Захват цели...</div>
                     </div>
                 </div>
                 <div class="card" style="background:#0f172a; padding:15px;">
@@ -362,7 +360,6 @@
             for(let i=1; i<total; i++) {
                 extraClues += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #222; cursor:pointer;" onclick="addClue('Подозрительный паттерн #${i}')"><span style="font-size:13px;">Пост #${i}</span><span class="interactive" style="font-size:12px;">Анализ</span></div>`;
             }
-
             showBrowser(`
                 <div class="card" style="background:#0f172a; padding:15px;">
                     <div style="display:flex; gap:15px; align-items:center; margin-bottom:15px;">
@@ -392,7 +389,6 @@
         }
 
         function openReport() {
-            // Проверка на всякий случай (если нажали через консоль)
             if (foundClues.size < activeCase.totalClues) return;
 
             const modal = document.getElementById('modal-overlay');
@@ -437,12 +433,15 @@
                 `;
             } else {
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                // Штраф и возврат в кейс (без поломки прогресса)
+                player.reputation = Math.max(0, player.reputation - 10);
+                save();
                 content.innerHTML = `
                     <div style="text-align:center;">
                         <div style="font-size:60px; margin-bottom:10px;">❌</div>
-                        <h2 style="color:var(--danger);">ПРОВАЛ</h2>
-                        <p style="font-size:14px; color:var(--hint); margin:15px 0;">Вывод неверен.</p>
-                        <button class="btn btn-outline" style="margin-top:10px;" onclick="document.getElementById('modal-overlay').classList.remove('active')">ВЕРНУТЬСЯ</button>
+                        <h2 style="color:var(--danger);">ОШИБКА</h2>
+                        <p style="font-size:14px; color:var(--hint); margin:15px 0;">Вывод неверен. Ты потерял 10 репутации. Изучи улики внимательнее.</p>
+                        <button class="btn btn-outline" style="margin-top:10px;" onclick="document.getElementById('modal-overlay').classList.remove('active')">ПОПРОБОВАТЬ СНОВА</button>
                     </div>
                 `;
             }
