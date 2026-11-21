@@ -51,7 +51,6 @@ body {
   scroll-behavior: smooth;
 }
 
-/* NAV */
 .nav {
   position: fixed;
   bottom: 0;
@@ -91,7 +90,6 @@ body {
 
 .nav-icon { font-size: 20px; }
 
-/* CARDS */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -127,7 +125,6 @@ body {
   box-shadow: 0 0 30px rgba(255, 215, 0, 0.08);
 }
 
-/* BUTTONS */
 .btn {
   width: 100%;
   padding: 15px;
@@ -178,7 +175,6 @@ body {
   pointer-events: none;
 }
 
-/* BADGES */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -195,7 +191,6 @@ body {
 .badge-red { background: rgba(255,42,109,0.12); color: var(--danger); border: 1px solid rgba(255,42,109,0.25); }
 .badge-gold { background: rgba(255,215,0,0.12); color: var(--gold); border: 1px solid rgba(255,215,0,0.25); }
 
-/* PROGRESS */
 .progress {
   height: 6px;
   background: #0a0f18;
@@ -211,7 +206,6 @@ body {
   box-shadow: 0 0 12px var(--primary);
 }
 
-/* HEADER */
 .header {
   display: flex;
   align-items: center;
@@ -227,7 +221,6 @@ body {
   text-shadow: 0 0 10px var(--primary);
 }
 
-/* TERMINAL */
 .terminal {
   background: #000;
   border: 1px solid #1a1a1a;
@@ -253,17 +246,7 @@ body {
 }
 .t-green { color: var(--primary); }
 .t-red { color: var(--danger); }
-.cursor {
-  display: inline-block;
-  width: 7px;
-  height: 13px;
-  background: var(--primary);
-  margin-left: 2px;
-  animation: blink 1s infinite;
-}
-@keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
 
-/* INTERACTIVE */
 .interactive {
   color: var(--primary);
   border-bottom: 1px dashed var(--primary);
@@ -273,7 +256,6 @@ body {
 }
 .interactive:active { background: rgba(0,255,200,0.15); }
 
-/* NOTEBOOK */
 .notebook-btn {
   position: fixed;
   bottom: 90px;
@@ -295,7 +277,6 @@ body {
 }
 .notebook-btn:active { transform: scale(0.9); }
 
-/* MODAL */
 .modal-bg {
   position: fixed;
   inset: 0;
@@ -331,7 +312,6 @@ body {
   transform: scale(1) translateY(0);
 }
 
-/* MINIGAMES */
 .minigame {
   background: #000;
   border: 1px solid var(--primary);
@@ -446,7 +426,6 @@ body {
 .bubble.bot { border-left: 3px solid var(--danger); }
 .bubble.me { border-left: 3px solid var(--primary); background: #0c1220; }
 
-/* STATS */
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -461,7 +440,6 @@ body {
 .stat .icon { font-size: 18px; display: block; margin-bottom: 2px; }
 .stat .val { font-size: 14px; font-weight: 800; }
 
-/* ANIMATIONS */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
@@ -477,12 +455,6 @@ body {
   100% { transform: translate(0); }
 }
 .glitch { animation: glitch 0.3s ease; }
-
-@keyframes successPulse {
-  0% { box-shadow: 0 0 0 0 rgba(0, 245, 160, 0.5); }
-  70% { box-shadow: 0 0 0 20px rgba(0, 245, 160, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 245, 160, 0); }
-}
 
 .clue-item {
   background: rgba(0, 245, 160, 0.08);
@@ -512,14 +484,6 @@ body {
   border-color: var(--primary);
   background: rgba(0, 255, 200, 0.08);
   box-shadow: 0 0 12px rgba(0, 255, 200, 0.15);
-}
-.deduction-card.correct {
-  border-color: var(--success);
-  background: rgba(0, 245, 160, 0.12);
-}
-.deduction-card.wrong {
-  border-color: var(--danger);
-  background: rgba(255, 42, 109, 0.12);
 }
 
 .hidden { display: none !important; }
@@ -555,9 +519,8 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 if (tg.setHeaderColor) tg.setHeaderColor('#03050a');
 
-// ====================== STATE ======================
 const S = {
-  p: JSON.parse(localStorage.getItem('shadow_v3')) || {
+  p: JSON.parse(localStorage.getItem('shadow_v4')) || {
     money: 1200, rep: 0, stars: 0, level: 1, tools: [], done: [], base: 0, story: 0, clues: 0, ach: []
   },
   case: null,
@@ -566,11 +529,10 @@ const S = {
   cases: [],
   stories: [],
 
-  save() { localStorage.setItem('shadow_v3', JSON.stringify(this.p)); },
+  save() { localStorage.setItem('shadow_v4', JSON.stringify(this.p)); },
   has(t) { return this.p.tools.includes(t); }
 };
 
-// ====================== DATA ======================
 const CITIES = ["Токио","Лондон","Нью-Йорк","Дубай","Сингапур","Париж","Москва","Сеул","Берлин","Стамбул","Гонконг","Сидней"];
 const PLANES = ["F-22 Raptor","Су-57","B-2 Spirit","F-35","Ту-160","J-20","Rafale","Eurofighter"];
 const NAMES = ["Алекс","Мария","Джон","Сара","Иван","Чен","Лиза","Макс","Юля","Даниил"];
@@ -582,7 +544,6 @@ const TOOLS = {
   "Стелс-пакет": { price: 3500, desc: "Снижает штраф за ошибку", icon: "🕶" }
 };
 
-// ====================== ГЕНЕРАЦИЯ БАЗОВЫХ КЕЙСОВ ======================
 function makeCase(id) {
   const cats = ["GEOINT","IMINT","HUMINT","OSINT"];
   const cat = cats[id % 4];
@@ -637,7 +598,6 @@ function makeCase(id) {
   };
 }
 
-// ====================== СЮЖЕТНЫЕ КЕЙСЫ (Комбинаторика) ======================
 const STORY_TEMPLATES = [
   {
     title: "ПРОПАВШИЙ ПРОГРАММИСТ",
@@ -704,7 +664,6 @@ const STORY_TEMPLATES = [
   }
 ];
 
-// Генерация 120 уникальных сюжетных кейсов на основе шаблонов
 function makeStories() {
   const result = [];
   for (let i = 0; i < 120; i++) {
@@ -719,7 +678,7 @@ function makeStories() {
       brief: template.brief,
       q: template.q,
       answers: template.answers,
-      total: 3, // нужно выбрать 3 улики
+      total: 3,
       deduction: template.clues,
       chat: template.chat,
       reward: {
@@ -732,7 +691,6 @@ function makeStories() {
   return result;
 }
 
-// ====================== МИНИ-ИГРА ДЕДУКЦИЯ ======================
 const Deduction = {
   selected: new Set(),
   
@@ -800,16 +758,13 @@ const Deduction = {
     
     const c = this.caseData;
     let correctCount = 0;
-    let wrongCount = 0;
     
     this.selected.forEach(id => {
       const clue = c.deduction.find(cl => cl.id === id);
       if (clue && clue.ok) correctCount++;
-      else wrongCount++;
     });
     
     if (correctCount === 3) {
-      // Успех
       Game.clue("Все улики верны! Дело раскрыто.");
       document.getElementById('finish').style.display = 'block';
       document.getElementById('sub').className = 'btn btn-danger';
@@ -817,7 +772,6 @@ const Deduction = {
       document.getElementById('sub').disabled = false;
       tg.showAlert("Отлично! Все 3 улики верны. Теперь сдай отчёт.");
     } else {
-      // Провал
       tg.showAlert(`Ошибка! Верных улик: ${correctCount} из 3. Попробуй снова.`);
       this.selected.clear();
       this.render();
@@ -826,7 +780,6 @@ const Deduction = {
   }
 };
 
-// ====================== БАЗОВЫЕ МИНИ-ИГРЫ (гео, имнт, хуминт) ======================
 const MG = {
   timer: null,
 
@@ -989,7 +942,6 @@ const MG = {
   }
 };
 
-// ====================== GAME ======================
 const Game = {
   init() {
     S.stories = makeStories();
@@ -998,7 +950,6 @@ const Game = {
   },
 
   next() {
-    // Сюжетный кейс выпадает каждый 4-й базовый
     const idx = Math.floor(S.p.base / 4);
     if (idx > S.p.story && S.p.story < S.stories.length) return S.stories[S.p.story];
     let c = S.cases.find(x => !S.p.done.includes(x.id));
@@ -1050,7 +1001,6 @@ const Game = {
     document.getElementById("nb").style.display = "flex";
     document.getElementById("nb").textContent = "📓 0";
 
-    // Если это сюжетный кейс - запускаем "Дедукцию"
     if (c.story) {
       let term = `
         <div class="terminal fade">
@@ -1061,7 +1011,6 @@ const Game = {
           </div>
           <div class="terminal-body">
             <div class="t-green">> ДЕШИФРОВКА КАНАЛА...</div>
-            <div id="typed"></div>
           </div>
         </div>`;
       if (c.chat) {
@@ -1072,7 +1021,6 @@ const Game = {
       App.browser(term);
       setTimeout(() => Deduction.start(c), 1000);
     } else {
-      // Для базовых кейсов - обычная механика
       if (c.cat === "GEOINT") MG.geo(c.answers[0].t, c.total);
       else if (c.cat === "IMINT") MG.imint(c.answers[0].t, c.total);
       else if (c.cat === "HUMINT") MG.humint(c.total);
@@ -1159,7 +1107,6 @@ const Game = {
   }
 };
 
-// ====================== APP (UI) ======================
 const App = {
   tab(name, el) {
     S.tab = name;
@@ -1299,7 +1246,6 @@ const App = {
   }
 };
 
-// START
 Game.init();
 </script>
 </body>
