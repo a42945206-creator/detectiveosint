@@ -4,140 +4,302 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OSINT Детектив</title>
-    <!-- Подключаем официальный скрипт Telegram -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-color: var(--tg-theme-bg-color, #17212b);
-            --text-color: var(--tg-theme-text-color, #ffffff);
-            --button-color: var(--tg-theme-button-color, #5288c1);
-            --button-text: var(--tg-theme-button-text-color, #ffffff);
-            --secondary-bg: var(--tg-theme-secondary-bg-color, #232e3c);
+            --bg: var(--tg-theme-bg-color, #17212b);
+            --text: var(--tg-theme-text-color, #ffffff);
+            --hint: var(--tg-theme-hint-color, #708499);
+            --btn: var(--tg-theme-button-color, #5288c1);
+            --btn-text: var(--tg-theme-button-text-color, #ffffff);
+            --card-bg: var(--tg-theme-secondary-bg-color, #232e3c);
+            --danger: #e53935;
+            --success: #43a047;
+            --link: #64b5f6;
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        h1 { font-size: 24px; margin-bottom: 5px; }
-        .card {
-            background-color: var(--secondary-bg);
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .btn {
-            background-color: var(--button-color);
-            color: var(--button-text);
-            border: none;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        .btn:active { opacity: 0.7; }
-        .hidden { display: none; }
-        .stats { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; }
-        .clue { margin-top: 10px; padding: 10px; border-left: 4px solid var(--button-color); background: rgba(255,255,255,0.05); border-radius: 4px; }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 16px; display: flex; flex-direction: column; gap: 16px; transition: all 0.3s; }
+        
+        h1, h2, h3 { margin: 0 0 10px 0; font-weight: 700; letter-spacing: -0.5px; }
+        .card { background-color: var(--card-bg); padding: 16px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); line-height: 1.5; }
+        .btn { background-color: var(--btn); color: var(--btn-text); border: none; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; transition: transform 0.1s, opacity 0.2s; margin-bottom: 10px; }
+        .btn:active { transform: scale(0.97); opacity: 0.8; }
+        .btn-outline { background: transparent; border: 2px solid var(--btn); color: var(--btn); }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-disabled { background-color: var(--hint); opacity: 0.5; pointer-events: none; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+        .stat-box { background: rgba(128,128,128,0.1); padding: 12px; border-radius: 10px; text-align: center; }
+        .stat-value { font-size: 20px; font-weight: bold; display: block; }
+        .stat-label { font-size: 12px; color: var(--hint); }
+
+        .hidden { display: none !important; }
+
+        /* Внутренний браузер игры */
+        .app-header { display: flex; align-items: center; margin-bottom: 15px; gap: 10px; }
+        .back-btn { background: transparent; border: none; color: var(--link); font-size: 24px; cursor: pointer; padding: 0; }
+        .app-content { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; border: 1px solid rgba(255,255,255,0.1); }
+        
+        /* Интерактивные элементы (улики) */
+        .interactive { cursor: pointer; position: relative; border-bottom: 1px dashed var(--link); display: inline-block; color: var(--link); }
+        .interactive:active { opacity: 0.5; }
+        .interactive.found { color: var(--hint); border-bottom: none; text-decoration: line-through; }
+
+        /* Блокнот */
+        .notebook { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 16px; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.3); transform: translateY(100%); transition: transform 0.3s ease-in-out; z-index: 50; }
+        .notebook.open { transform: translateY(0); }
+        .notebook-toggle { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; border-radius: 30px; background: var(--btn); color: white; border: none; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 51; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        .clue-item { font-size: 14px; margin-bottom: 8px; color: var(--success); }
+
+        /* Модалки */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal { background: var(--card-bg); padding: 20px; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; transform: scale(0.9); transition: transform 0.2s; }
+        .modal-overlay.active .modal { transform: scale(1); }
+        
+        /* Фейковое фото */
+        .fake-photo { width: 100%; height: 200px; background: #333; border-radius: 8px; display: flex; justify-content: center; align-items: center; flex-direction: column; position: relative; background-image: radial-gradient(circle, #444 0%, #222 100%); }
+        .coffee-cup { font-size: 50px; margin-bottom: 10px; }
+        .cafe-sign { font-size: 18px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 4px; border: 1px solid #555; }
     </style>
 </head>
 <body>
 
-    <!-- Экран 1: Главное меню -->
+    <!-- ЭКРАН 1: Главное меню -->
     <div id="screen-home">
         <h1>🕵️ OSINT Детектив</h1>
         <div class="card">
-            <div class="stats">
-                <span id="money-display">💰 0 ₽</span>
-                <span id="rep-display">⭐ 0</span>
+            <div class="stats-grid">
+                <div class="stat-box"><span class="stat-value" id="money-display">0 ₽</span><span class="stat-label">Баланс</span></div>
+                <div class="stat-box"><span class="stat-value" id="rep-display">0</span><span class="stat-label">Репутация</span></div>
             </div>
-            <p>Ты — начинающий аналитик. Бери кейсы, ищи улики, зарабатывай.</p>
+            <p style="margin: 10px 0 0; font-size: 14px; color: var(--hint);">Агентство "Око". Ждём твоих расследований.</p>
         </div>
         <button class="btn" onclick="startCase()">Взять кейс №1</button>
     </div>
 
-    <!-- Экран 2: Кейс -->
-    <div id="screen-case" class="hidden">
-        <h1>Кейс: Пропавшая Инга</h1>
-        <div class="card">
-            <p>Клиент: «Моя сестра Инга не выходит на связь 3 дня. Писала, что поехала на встречу с подругой из интернета. Ник: @inga_star_. Помогите!»</p>
+    <!-- ЭКРАН 2: Интерфейс кейса и "Браузера" -->
+    <div id="screen-case" class="hidden" style="padding-bottom: 80px;">
+        <div class="app-header">
+            <button class="back-btn" onclick="goHome()">←</button>
+            <h2>Соцсеть "Волна"</h2>
         </div>
-        
-        <div id="clues-container"></div>
 
-        <button class="btn" id="clue-btn" onclick="findClue()">🔍 Искать улики</button>
-        <button class="btn hidden" id="solve-btn" onclick="solveCase()" style="background-color: #4caf50;">✅ Сдать отчёт (Café Luna)</button>
-        <button class="btn" onclick="goHome()" style="background-color: transparent; border: 1px solid var(--button-color); color: var(--button-color);">Назад</button>
+        <div class="card" id="brief-card">
+            <p style="font-size: 14px; margin: 0;"><b>Задача:</b> Клиент ищет сестру Ингу (@inga_star_). Она поехала на встречу с подругой из интернета. Найди улики: изучи <span class="interactive" onclick="openProfile()">профиль Инги</span> и её <span class="interactive" onclick="openChat()">переписку</span>.</p>
+        </div>
+
+        <!-- Контейнер для "страниц" браузера -->
+        <div id="browser-view" class="hidden">
+            <div class="app-content" id="browser-content">
+                <!-- Сюда будет рендериться контент -->
+            </div>
+        </div>
+
+        <!-- Кнопка сдачи отчёта (появляется когда все улики найдены) -->
+        <div id="finish-section" class="hidden" style="margin-top: 20px;">
+            <button class="btn btn-success" onclick="openReport()">📝 Сдать отчёт</button>
+        </div>
+    </div>
+
+    <!-- Плавающая кнопка блокнота -->
+    <button class="notebook-toggle" id="notebook-btn" onclick="toggleNotebook()" style="display: none;">📓</button>
+
+    <!-- Блокнот (выезжает снизу) -->
+    <div class="notebook" id="notebook">
+        <h3>📓 Блокнот детектива (<span id="clue-count">0</span>/3)</h3>
+        <div id="notebook-clues" style="margin-bottom: 10px; max-height: 150px; overflow-y: auto;">
+            <p style="color: var(--hint); font-size: 14px;" id="no-clues">Улик пока нет...</p>
+        </div>
+        <button class="btn" onclick="toggleNotebook()">Закрыть</button>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО: Сдача отчёта -->
+    <div class="modal-overlay" id="report-modal">
+        <div class="modal">
+            <h2>📝 Сдача отчёта</h2>
+            <p style="font-size: 14px;">Где сейчас Инга и что происходит?</p>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <button class="btn" onclick="submitAnswer('cafe')">В кафе Café Luna</button>
+                <button class="btn btn-outline" onclick="submitAnswer('fake')">Аккаунт Инги взломали</button>
+                <button class="btn btn-outline" onclick="submitAnswer('bot')">Она уехала к подруге домой</button>
+                <button class="btn" style="background: transparent; color: var(--hint);" onclick="closeReport()">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО: Результат -->
+    <div class="modal-overlay" id="result-modal">
+        <div class="modal">
+            <h2 id="result-title"></h2>
+            <p id="result-text" style="font-size: 15px; line-height: 1.5;"></p>
+            <button class="btn btn-success" onclick="closeResult()" style="margin-top: 15px;">Завершить</button>
+        </div>
     </div>
 
     <script>
-        // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Разворачиваем на весь экран
+        tg.expand(); 
 
-        // Данные игрока (пока храним в памяти браузера)
-        let player = {
-            money: 0,
-            reputation: 0,
-            caseProgress: 0
-        };
-
-        // Улики для кейса
-        const clues = [
-            "📱 Профиль @inga_star_: 12 фото, био «люблю кофе».",
-            "🖼 На последнем фото видна вывеска «Café Luna».",
-            "💬 Переписка: подруга зовет в «обычное место».",
-            "👤 Аккаунт подруги создан 5 дней назад, 0 друзей. Это бот!"
-        ];
+        let player = { money: 0, reputation: 0 };
+        
+        // Состояние кейса
+        let foundClues = new Set();
+        const TOTAL_CLUES = 3;
 
         function updateUI() {
-            document.getElementById('money-display').innerText = `💰 ${player.money} ₽`;
-            document.getElementById('rep-display').innerText = `⭐ ${player.reputation}`;
+            document.getElementById('money-display').innerText = `${player.money} ₽`;
+            document.getElementById('rep-display').innerText = player.reputation;
+            document.getElementById('clue-count').innerText = foundClues.size;
+            
+            if (foundClues.size > 0) {
+                document.getElementById('notebook-btn').style.display = 'flex';
+            }
+            if (foundClues.size === TOTAL_CLUES) {
+                document.getElementById('finish-section').classList.remove('hidden');
+            }
         }
 
         function startCase() {
             document.getElementById('screen-home').classList.add('hidden');
             document.getElementById('screen-case').classList.remove('hidden');
-            player.caseProgress = 0;
-            document.getElementById('clues-container').innerHTML = '';
-            document.getElementById('clue-btn').classList.remove('hidden');
-            document.getElementById('solve-btn').classList.add('hidden');
-        }
-
-        function findClue() {
-            if (player.caseProgress < clues.length) {
-                const div = document.createElement('div');
-                div.className = 'clue';
-                div.innerText = clues[player.caseProgress];
-                document.getElementById('clues-container').appendChild(div);
-                player.caseProgress++;
-
-                // Если нашли все улики, показываем кнопку решения
-                if (player.caseProgress === clues.length) {
-                    document.getElementById('clue-btn').classList.add('hidden');
-                    document.getElementById('solve-btn').classList.remove('hidden');
-                }
-            }
-        }
-
-        function solveCase() {
-            player.money += 500;
-            player.reputation += 10;
-            updateUI();
-            tg.showAlert("Отлично, детектив! Ты вычислил бота. Награда: 500 ₽ и 10 репутации.");
-            goHome();
+            document.getElementById('notebook-btn').style.display = 'flex';
         }
 
         function goHome() {
             document.getElementById('screen-case').classList.add('hidden');
+            document.getElementById('browser-view').classList.add('hidden');
             document.getElementById('screen-home').classList.remove('hidden');
+            toggleNotebook(true); // Закрыть блокнот
+        }
+
+        // --- Логика "Браузера" ---
+        function showBrowser(html) {
+            document.getElementById('browser-content').innerHTML = html;
+            document.getElementById('browser-view').classList.remove('hidden');
+        }
+
+        function openProfile() {
+            showBrowser(`
+                <h3>@inga_star_</h3>
+                <p style="color: var(--hint); font-size: 14px;">12 фото • Био: люблю кофе и путешествия</p>
+                <hr style="border-color: #444; margin: 15px 0;">
+                <p><b>Последний пост</b> (3 дня назад):</p>
+                <div class="fake-photo" onclick="addClue('cafe', 'На фото найдена вывеска Café Luna')">
+                    <div class="coffee-cup">☕</div>
+                    <div class="cafe-sign">Café Luna</div>
+                </div>
+                <p style="font-size: 12px; color: var(--hint); margin-top: 5px; text-align: center;">Нажми на фото, чтобы изучить</p>
+                <button class="btn btn-outline" style="margin-top: 15px;" onclick="openChat()">Открыть переписку</button>
+            `);
+        }
+
+        function openChat() {
+            showBrowser(`
+                <h3>Переписка с @luna_friend</h3>
+                <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; font-size: 14px;">
+                    <p style="margin: 0 0 10px 0;"><b>luna_friend:</b> Приходи в наше обычное место!</p>
+                    <p style="margin: 0;"><b>Инга:</b> Ок, скоро буду.</p>
+                </div>
+                <p style="margin-top: 15px; font-size: 14px;">Кто такая эта подруга? Проверь её профиль:</p>
+                <span class="interactive" onclick="openFriendProfile()">Профиль @luna_friend</span>
+            `);
+        }
+
+        function openFriendProfile() {
+            showBrowser(`
+                <h3>@luna_friend</h3>
+                <p onclick="addClue('date', 'Аккаунт создан 5 дней назад')" style="font-size: 14px;">
+                    Дата регистрации: <span class="interactive">5 дней назад</span>
+                </p>
+                <p onclick="addClue('friends', 'У подруги 0 друзей')" style="font-size: 14px;">
+                    Друзья: <span class="interactive">0</span>
+                </p>
+                <p style="font-size: 14px; color: var(--hint);">Постов: 1</p>
+                
+                <div style="margin-top: 20px; padding: 10px; background: rgba(229, 57, 53, 0.1); border-left: 4px solid var(--danger); font-size: 13px;">
+                    <b>Анализ:</b> Свежесозданный аккаунт без друзей часто используется как приманка. Сопоставь это с фото из профиля Инги.
+                </div>
+            `);
+        }
+
+        // --- Логика улик ---
+        function addClue(id, text) {
+            if (foundClues.has(id)) return; // Если уже нашли
+            
+            foundClues.add(id);
+            
+            // Визуально помечаем, что улика найдена
+            const elements = document.querySelectorAll('.interactive');
+            elements.forEach(el => {
+                if (el.innerText.includes('Café Luna') || el.innerText.includes('5 дней') || el.innerText.includes('0')) {
+                    el.classList.add('found');
+                }
+            });
+
+            // Добавляем в блокнот
+            const notebook = document.getElementById('notebook-clues');
+            if (foundClues.size === 1) notebook.innerHTML = ''; // Убираем "Улик пока нет"
+            
+            const clueDiv = document.createElement('div');
+            clueDiv.className = 'clue-item';
+            clueDiv.innerHTML = `✅ ${text}`;
+            notebook.appendChild(clueDiv);
+
+            updateUI();
+            
+            // Автоматически открываем блокнот для фидбека
+            toggleNotebook(false);
+            
+            // Небольшая вибрация (если поддерживается)
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function toggleNotebook(forceClose = false) {
+            const nb = document.getElementById('notebook');
+            if (forceClose === true) {
+                nb.classList.remove('open');
+            } else {
+                nb.classList.toggle('open');
+            }
+        }
+
+        // --- Сдача отчёта ---
+        function openReport() {
+            toggleNotebook(true);
+            document.getElementById('report-modal').classList.add('active');
+        }
+
+        function closeReport() {
+            document.getElementById('report-modal').classList.remove('active');
+        }
+
+        function submitAnswer(ans) {
+            closeReport();
+            const title = document.getElementById('result-title');
+            const text = document.getElementById('result-text');
+
+            if (ans === 'cafe') {
+                player.money += 500;
+                player.reputation += 10;
+                title.innerText = "✅ Верно!";
+                title.style.color = "var(--success)";
+                text.innerText = "Ты сопоставил все улики. Подруга — бот-приманка, а Инга ждет в Café Luna. Кейс закрыт!\n\n+500 ₽\n+10 Репутации";
+            } else {
+                player.reputation = Math.max(0, player.reputation - 5);
+                title.innerText = "❌ Ошибка!";
+                title.style.color = "var(--danger)";
+                text.innerText = "Ты сделал поспешный вывод. Пересмотри блокнот: аккаунт подруги свежий, а на фото Инги есть конкретное место.\n\n-5 Репутации";
+            }
+            
+            updateUI();
+            document.getElementById('result-modal').classList.add('active');
+        }
+
+        function closeResult() {
+            document.getElementById('result-modal').classList.remove('active');
+            goHome();
         }
 
         updateUI();
