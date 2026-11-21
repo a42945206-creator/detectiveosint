@@ -497,6 +497,31 @@ body {
   gap: 8px;
 }
 
+.deduction-card {
+  background: #0a0f18;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: left;
+}
+.deduction-card:active { transform: scale(0.98); }
+.deduction-card.selected {
+  border-color: var(--primary);
+  background: rgba(0, 255, 200, 0.08);
+  box-shadow: 0 0 12px rgba(0, 255, 200, 0.15);
+}
+.deduction-card.correct {
+  border-color: var(--success);
+  background: rgba(0, 245, 160, 0.12);
+}
+.deduction-card.wrong {
+  border-color: var(--danger);
+  background: rgba(255, 42, 109, 0.12);
+}
+
 .hidden { display: none !important; }
 </style>
 </head>
@@ -532,17 +557,8 @@ if (tg.setHeaderColor) tg.setHeaderColor('#03050a');
 
 // ====================== STATE ======================
 const S = {
-  p: JSON.parse(localStorage.getItem('shadow_v2')) || {
-    money: 1200,
-    rep: 0,
-    stars: 0,
-    level: 1,
-    tools: [],
-    done: [],
-    base: 0,
-    story: 0,
-    clues: 0,
-    ach: []
+  p: JSON.parse(localStorage.getItem('shadow_v3')) || {
+    money: 1200, rep: 0, stars: 0, level: 1, tools: [], done: [], base: 0, story: 0, clues: 0, ach: []
   },
   case: null,
   found: new Set(),
@@ -550,7 +566,7 @@ const S = {
   cases: [],
   stories: [],
 
-  save() { localStorage.setItem('shadow_v2', JSON.stringify(this.p)); },
+  save() { localStorage.setItem('shadow_v3', JSON.stringify(this.p)); },
   has(t) { return this.p.tools.includes(t); }
 };
 
@@ -566,7 +582,7 @@ const TOOLS = {
   "Стелс-пакет": { price: 3500, desc: "Снижает штраф за ошибку", icon: "🕶" }
 };
 
-// ====================== GENERATORS ======================
+// ====================== ГЕНЕРАЦИЯ БАЗОВЫХ КЕЙСОВ ======================
 function makeCase(id) {
   const cats = ["GEOINT","IMINT","HUMINT","OSINT"];
   const cat = cats[id % 4];
@@ -621,48 +637,196 @@ function makeCase(id) {
   };
 }
 
+// ====================== СЮЖЕТНЫЕ КЕЙСЫ (Комбинаторика) ======================
+const STORY_TEMPLATES = [
+  {
+    title: "ПРОПАВШИЙ ПРОГРАММИСТ",
+    cat: "OSINT", diff: "СЮЖЕТ",
+    brief: "Программист Игорь исчез после странного сообщения. Найди 3 ключевые улики, чтобы понять, где он.",
+    q: "Где Игорь?",
+    answers: [{t:"Заброшенный склад",ok:true},{t:"Уехал в отпуск",ok:false},{t:"Похищен",ok:false}],
+    clues: [
+      {id:1, text:"Переписка: «Приходи на старый склад, там будет сюрприз»", ok:true},
+      {id:2, text:"GPS машины: последняя точка — склад у реки", ok:true},
+      {id:3, text:"Последний пост: фото вывески «Склад №7»", ok:true},
+      {id:4, text:"Профиль: увлекается рыбалкой", ok:false},
+      {id:5, text:"Показания жены: он был расстроен", ok:false},
+      {id:6, text:"Запись камеры: машина уехала на юг", ok:false}
+    ],
+    chat: [
+      {s:"bot", t:"Бро, приходи на старый склад, там будет сюрприз!"},
+      {s:"me", t:"Какой склад? Уточни."},
+      {s:"bot", t:"Склад №7, у реки. Только никому не говори."}
+    ],
+    reward: {money: 1500, rep: 30, star: true}
+  },
+  {
+    title: "ФЕЙКОВЫЙ ДИПЛОМАТ",
+    cat: "HUMINT", diff: "СЮЖЕТ",
+    brief: "Дипломат с подозрительной биографией. Найди 3 улики, чтобы доказать, что он использует чужое фото.",
+    q: "Кто этот дипломат?",
+    answers: [{t:"Актер с фотобанка",ok:true},{t:"Настоящий дипломат",ok:false},{t:"Хакер",ok:false}],
+    clues: [
+      {id:1, text:"Фото найдено на сайте актерского агентства", ok:true},
+      {id:2, text:"Язык: смесь английского и французского без акцента", ok:true},
+      {id:3, text:"Instagram: аккаунт создан 5 дней назад", ok:true},
+      {id:4, text:"Посты: только репосты новостей", ok:false},
+      {id:5, text:"Друзья: 0 человек", ok:false},
+      {id:6, text:"Email: gmail.com", ok:false}
+    ],
+    chat: [
+      {s:"bot", t:"Я дипломат из Франции. Приехал на переговоры."},
+      {s:"me", t:"Где ваши верительные грамоты?"},
+      {s:"bot", t:"Пришлю позже. Сейчас не до этого."}
+    ],
+    reward: {money: 2000, rep: 40, star: true}
+  },
+  {
+    title: "УТЕЧКА В DARKNET",
+    cat: "IMINT", diff: "СЮЖЕТ",
+    brief: "Хакер продает базу данных. Найди 3 улики, чтобы понять, где он работает.",
+    q: "Где работает хакер?",
+    answers: [{t:"Индия (UTC+5:30)",ok:true},{t:"Россия (UTC+3)",ok:false},{t:"США (UTC-5)",ok:false}],
+    clues: [
+      {id:1, text:"Время активности: с 10:00 до 22:00 по местному", ok:true},
+      {id:2, text:"Часовой пояс: UTC+5:30", ok:true},
+      {id:3, text:"Язык постов: хинди и английский", ok:true},
+      {id:4, text:"Никнейм: хакер_777", ok:false},
+      {id:5, text:"Аватарка: маска", ok:false},
+      {id:6, text:"Кошелек: Bitcoin", ok:false}
+    ],
+    chat: [
+      {s:"bot", t:"Лот выставлен. Биткоин-кошелек в профиле."},
+      {s:"me", t:"Ты в какой стране?"},
+      {s:"bot", t:"Не твое дело. Но платить можно в любое время суток."}
+    ],
+    reward: {money: 2500, rep: 50, star: true}
+  }
+];
+
+// Генерация 120 уникальных сюжетных кейсов на основе шаблонов
 function makeStories() {
-  return [
-    {
-      id: 9001, title: "ЧЁРНЫЙ ЛЕБЕДЬ", cat: "GEOINT", diff: "СЮЖЕТ", story: true,
-      brief: `Перехвачена переписка. Используй <span class="interactive" onclick="MG.geo('Лондон',4)">спутниковый канал</span>, чтобы найти склад.`,
-      q: "Где склад?", answers: [{t:"Лондон",ok:true},{t:"Берлин",ok:false},{t:"Париж",ok:false}],
-      total: 4, clues: ["Код LND_99","Порт","Белый дом","Река"],
-      reward: {money: 1800, rep: 45, star: true},
-      chat: [
-        {s:"bot", t:"Встречаемся в порту на закате. Код: LND_99"},
-        {s:"me", t:"Груз уже на месте?"},
-        {s:"bot", t:"Да. Старый склад у реки. Местные зовут его «Белый дом»."}
-      ]
-    },
-    {
-      id: 9002, title: "ТЕНЕВОЙ БРОКЕР", cat: "HUMINT", diff: "СЮЖЕТ", story: true,
-      brief: `На рынке продают базу. Проверь <span class="interactive" onclick="MG.humint(4)">цифровой след</span> продавца.`,
-      q: "Кто продавец?", answers: [{t:"Бот / Фейк",ok:true},{t:"Реальный человек",ok:false},{t:"Группировка",ok:false}],
-      total: 4, clues: ["Одноразовый аккаунт","ИИ-текст","Нет истории","Подозрительный кошелёк"],
-      reward: {money: 2200, rep: 55, star: true},
-      chat: [
-        {s:"bot", t:"Лот выставлен. Кошелёк в профиле."},
-        {s:"me", t:"Это не подстава?"},
-        {s:"bot", t:"Бро, я 10 лет в теме. Пиши в личку."}
-      ]
-    },
-    {
-      id: 9003, title: "ПРИЗРАК", cat: "IMINT", diff: "СЮЖЕТ", story: true,
-      brief: `Спутник засек неизвестный борт. Идентифицируй через <span class="interactive" onclick="MG.imint('F-22 Raptor',4)">телеметрию</span>.`,
-      q: "Что за самолёт?", answers: [{t:"F-22 Raptor",ok:true},{t:"Су-57",ok:false},{t:"B-2 Spirit",ok:false}],
-      total: 4, clues: ["Скорость 2 Маха","Низкая заметность","Тепловой след","Стелс-форма"],
-      reward: {money: 2600, rep: 65, star: true},
-      chat: [
-        {s:"bot", t:"Цель на радаре. Скорость 2 Маха."},
-        {s:"me", t:"Вижу тепловой след. Похоже на стелс."},
-        {s:"bot", t:"Он исчез с радаров... но спутник его поймал."}
-      ]
-    }
-  ];
+  const result = [];
+  for (let i = 0; i < 120; i++) {
+    const template = STORY_TEMPLATES[i % STORY_TEMPLATES.length];
+    const storyId = 9000 + i + 1;
+    result.push({
+      id: storyId,
+      title: template.title + " #" + (i + 1),
+      cat: template.cat,
+      diff: "СЮЖЕТ",
+      story: true,
+      brief: template.brief,
+      q: template.q,
+      answers: template.answers,
+      total: 3, // нужно выбрать 3 улики
+      deduction: template.clues,
+      chat: template.chat,
+      reward: {
+        money: template.reward.money + (i * 100),
+        rep: template.reward.rep + (i * 5),
+        star: true
+      }
+    });
+  }
+  return result;
 }
 
-// ====================== MINIGAMES ======================
+// ====================== МИНИ-ИГРА ДЕДУКЦИЯ ======================
+const Deduction = {
+  selected: new Set(),
+  
+  start(caseData) {
+    this.selected.clear();
+    this.caseData = caseData;
+    this.render();
+  },
+  
+  render() {
+    const c = this.caseData;
+    let html = `
+      <div class="minigame fade">
+        <div style="font-size:13px;font-weight:800;letter-spacing:1px;margin-bottom:8px;">ДЕДУКЦИЯ</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Выбери 3 ключевые улики, чтобы раскрыть дело</div>
+        <div style="display:flex;justify-content:center;gap:6px;margin-bottom:12px;">
+          <div style="font-size:24px;font-weight:900;color:var(--primary);">${this.selected.size}</div>
+          <div style="font-size:24px;font-weight:900;color:var(--muted);">/ 3</div>
+        </div>
+        <div style="text-align:left;">`;
+    
+    c.deduction.forEach((clue, index) => {
+      const isSelected = this.selected.has(clue.id);
+      html += `
+        <div class="deduction-card ${isSelected ? 'selected' : ''}" 
+             onclick="Deduction.toggle(${clue.id})">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:20px;height:20px;border-radius:50%;border:2px solid ${isSelected ? 'var(--primary)' : '#333'};display:flex;align-items:center;justify-content:center;font-size:12px;background:${isSelected ? 'var(--primary)' : 'transparent'};">
+              ${isSelected ? '✓' : ''}
+            </div>
+            <div style="font-size:13px;">${clue.text}</div>
+          </div>
+        </div>`;
+    });
+    
+    html += `</div>`;
+    html += `
+        <button class="btn btn-primary" style="margin-top:14px;" onclick="Deduction.check()">
+          ПРОВЕРИТЬ
+        </button>
+      </div>`;
+    
+    App.browser(html);
+  },
+  
+  toggle(id) {
+    if (this.selected.has(id)) {
+      this.selected.delete(id);
+    } else {
+      if (this.selected.size < 3) {
+        this.selected.add(id);
+      } else {
+        tg.showAlert("Можно выбрать только 3 улики");
+        return;
+      }
+    }
+    this.render();
+  },
+  
+  check() {
+    if (this.selected.size < 3) {
+      tg.showAlert("Выбери ровно 3 улики");
+      return;
+    }
+    
+    const c = this.caseData;
+    let correctCount = 0;
+    let wrongCount = 0;
+    
+    this.selected.forEach(id => {
+      const clue = c.deduction.find(cl => cl.id === id);
+      if (clue && clue.ok) correctCount++;
+      else wrongCount++;
+    });
+    
+    if (correctCount === 3) {
+      // Успех
+      Game.clue("Все улики верны! Дело раскрыто.");
+      document.getElementById('finish').style.display = 'block';
+      document.getElementById('sub').className = 'btn btn-danger';
+      document.getElementById('sub').textContent = 'СДАТЬ ОТЧЁТ';
+      document.getElementById('sub').disabled = false;
+      tg.showAlert("Отлично! Все 3 улики верны. Теперь сдай отчёт.");
+    } else {
+      // Провал
+      tg.showAlert(`Ошибка! Верных улик: ${correctCount} из 3. Попробуй снова.`);
+      this.selected.clear();
+      this.render();
+      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("error");
+    }
+  }
+};
+
+// ====================== БАЗОВЫЕ МИНИ-ИГРЫ (гео, имнт, хуминт) ======================
 const MG = {
   timer: null,
 
@@ -834,6 +998,7 @@ const Game = {
   },
 
   next() {
+    // Сюжетный кейс выпадает каждый 4-й базовый
     const idx = Math.floor(S.p.base / 4);
     if (idx > S.p.story && S.p.story < S.stories.length) return S.stories[S.p.story];
     let c = S.cases.find(x => !S.p.done.includes(x.id));
@@ -885,7 +1050,8 @@ const Game = {
     document.getElementById("nb").style.display = "flex";
     document.getElementById("nb").textContent = "📓 0";
 
-    if (c.story && c.chat) {
+    // Если это сюжетный кейс - запускаем "Дедукцию"
+    if (c.story) {
       let term = `
         <div class="terminal fade">
           <div class="terminal-bar">
@@ -897,13 +1063,20 @@ const Game = {
             <div class="t-green">> ДЕШИФРОВКА КАНАЛА...</div>
             <div id="typed"></div>
           </div>
-        </div>
-        <div class="card" style="background:#060a12;">`;
-      c.chat.forEach(m => {
-        term += `<div class="bubble ${m.s}"><b>${m.s==="bot"?"ПОДОЗРЕВАЕМЫЙ":"АГЕНТ"}:</b> ${m.t}</div>`;
-      });
-      term += `<div style="font-size:12px;color:var(--muted);margin-top:10px;">Изучи бриф и собери улики</div></div>`;
+        </div>`;
+      if (c.chat) {
+        c.chat.forEach(m => {
+          term += `<div class="bubble ${m.s}"><b>${m.s==="bot"?"ПОДОЗРЕВАЕМЫЙ":"АГЕНТ"}:</b> ${m.t}</div>`;
+        });
+      }
       App.browser(term);
+      setTimeout(() => Deduction.start(c), 1000);
+    } else {
+      // Для базовых кейсов - обычная механика
+      if (c.cat === "GEOINT") MG.geo(c.answers[0].t, c.total);
+      else if (c.cat === "IMINT") MG.imint(c.answers[0].t, c.total);
+      else if (c.cat === "HUMINT") MG.humint(c.total);
+      else MG.osint(c.total);
     }
 
     if (S.has("Декодер") && Math.random() > 0.35) {
@@ -924,19 +1097,6 @@ const Game = {
     if (cp) cp.style.width = `${(S.found.size / S.case.total) * 100}%`;
 
     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
-
-    const fin = document.getElementById("finish");
-    const sub = document.getElementById("sub");
-    if (fin) fin.style.display = "block";
-
-    if (S.found.size >= S.case.total) {
-      sub.className = "btn btn-danger";
-      sub.textContent = "СДАТЬ ОТЧЁТ";
-      sub.disabled = false;
-    } else {
-      sub.className = "btn btn-outline disabled";
-      sub.textContent = `НАЙДЕНО ${S.found.size} ИЗ ${S.case.total}`;
-    }
   },
 
   report() {
