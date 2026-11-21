@@ -36,6 +36,7 @@
         h1, h2, h3 { margin: 0 0 15px 0; font-weight: 800; letter-spacing: -0.5px; }
         .badge { display: inline-block; padding: 6px 12px; border-radius: 8px; font-size: 10px; font-weight: 900; background: rgba(0, 255, 204, 0.1); color: var(--primary); text-transform: uppercase; letter-spacing: 1px; border: 1px solid rgba(0, 255, 204, 0.2); margin-bottom: 10px; }
         .badge-hard { background: rgba(255, 0, 85, 0.1); color: var(--secondary); border-color: rgba(255,0,85,0.2); }
+        .badge-gold { background: rgba(255, 215, 0, 0.1); color: var(--gold); border-color: rgba(255,215,0,0.2); }
 
         .progress-container { margin-top: 15px; }
         .progress-bg { height: 8px; background: #111; border-radius: 4px; overflow: hidden; }
@@ -94,13 +95,52 @@
         const PLANES = ["Boeing 777", "Airbus A380", "F-22 Raptor", "Су-57", "Ан-225", "B-2 Spirit"];
         const NAMES = ["Алекс", "Мария", "Джон", "Сара", "Иван", "Чен"];
 
+        // ГЕНЕРАТОР 350 СЮЖЕТНЫХ КЕЙСОВ
+        let STORY_CASES = [];
+        function generateStoryCases() {
+            for(let i=1; i<=350; i++) {
+                const isGeo = i % 2 === 0;
+                const city = CITIES[i % CITIES.length];
+                const name = NAMES[i % NAMES.length];
+                
+                let title, brief, q, ans, fake1, fake2, clues = 3;
+
+                if (isGeo) {
+                    title = `СЮЖЕТ #${i}: Пропавший груз`;
+                    brief = `Контрабандисты спрятали груз. Найди точку. Изучи <span class='interactive' onclick='openGeoEvidence("${city}", ${clues})'>спутниковый снимок</span>.`;
+                    q = "В каком городе спрятан груз?";
+                    ans = city;
+                    fake1 = CITIES[(i+1) % CITIES.length];
+                    fake2 = CITIES[(i+2) % CITIES.length];
+                } else {
+                    title = `СЮЖЕТ #${i}: Двойной агент`;
+                    brief = `Подозреваемый в утечке данных. Найди его реальную личность. Изучи <span class='interactive' onclick='openHumanEvidence("${name}", ${clues})'>цифровой профиль</span>.`;
+                    q = "Кто на самом деле этот агент?";
+                    ans = "Это бот / фейк";
+                    fake1 = "Реальный человек";
+                    fake2 = "Сотрудник спецслужб";
+                }
+
+                let answers = [
+                    { t: ans, correct: true },
+                    { t: fake1, correct: false },
+                    { t: fake2, correct: false }
+                ].sort(() => 0.5 - Math.random());
+
+                STORY_CASES.push({
+                    id: 1000 + i, isStory: true, title: title, category: isGeo ? "GEOINT" : "HUMINT", difficulty: "СЮЖЕТ",
+                    brief: brief, questions: [{ text: q, answers: answers }],
+                    totalClues: clues, reward: { money: 500 + (i * 10), rep: 10 + (i * 2), stars: i % 10 === 0 ? 1 : 0 }
+                });
+            }
+        }
+
         let CASES_DB = [];
 
-        // Генератор кейсов (железобетонные ответы)
         function generateCases() {
             for (let i = 1; i <= 700; i++) {
                 const cat = CATEGORIES[i % CATEGORIES.length];
-                const clueCount = Math.floor(Math.random() * 9) + 2; // 2-10 улик
+                const clueCount = Math.floor(Math.random() * 9) + 2;
                 let title, brief, qText, correctAnswer, fakeAnswers = [], clues = [];
 
                 if (cat === "GEOINT") {
@@ -134,7 +174,6 @@
                     clues[0] = "Текст сгенерирован ИИ";
                 }
 
-                // Формируем массив ответов (1 правильный, 2 фейка) и мешаем
                 let answers = [
                     { t: correctAnswer, correct: true },
                     { t: fakeAnswers[0], correct: false },
@@ -150,22 +189,37 @@
             }
         }
 
-        let player = JSON.parse(localStorage.getItem('osint_pro_v6')) || { 
-            money: 500, reputation: 0, stars: 0, level: 1, tools: [], completedCases: [] 
+        // Загружаем базу
+        let player = JSON.parse(localStorage.getItem('osint_pro_v8')) || { 
+            money: 500, reputation: 0, stars: 0, level: 1, tools: [], completedCases: [], baseCasesDone: 0
         };
+        
         if (CASES_DB.length === 0) generateCases(); 
+        if (STORY_CASES.length === 0) generateStoryCases(); 
 
         let currentTab = 'cases';
         let activeCase = null;
         let foundClues = new Set();
 
-        function save() { localStorage.setItem('osint_pro_v6', JSON.stringify(player)); }
+        function save() { localStorage.setItem('osint_pro_v8', JSON.stringify(player)); }
 
         function render() {
             const content = document.getElementById('main-content');
             
             if (currentTab === 'cases') {
-                const nextCase = CASES_DB.find(c => !player.completedCases.includes(c.id)) || CASES_DB[0];
+                let nextCase = null;
+                let isStoryNext = false;
+
+                // Логика выдачи кейсов (Сюжет выпадает каждые 3-5 базовых)
+                const nextStoryIndex = Math.floor(player.baseCasesDone / 4); // примерно каждые 4 кейса
+                const storiesLeft = player.storyDone || 0;
+
+                if (nextStoryIndex > storiesLeft && storiesLeft < STORY_CASES.length) {
+                    nextCase = STORY_CASES[storiesLeft];
+                    isStoryNext = true;
+                } else {
+                    nextCase = CASES_DB.find(c => !player.completedCases.includes(c.id)) || CASES_DB[0];
+                }
                 
                 content.innerHTML = `
                     <div class="animate">
@@ -175,43 +229,52 @@
                             <div class="progress-container">
                                 <div class="progress-bg"><div class="progress-fill" style="width: ${(player.completedCases.length % 5) * 20}%"></div></div>
                             </div>
-                            <p style="font-size:11px; color:var(--hint); margin-top:8px; font-weight:800; text-transform:uppercase; letter-spacing:1px;">Архив: ${player.completedCases.length} / 700 дел</p>
+                            <p style="font-size:11px; color:var(--hint); margin-top:8px; font-weight:800; text-transform:uppercase; letter-spacing:1px;">Архив: ${player.completedCases.length} дел</p>
                         </div>
 
-                        <div class="card" style="border-color: rgba(0, 255, 204, 0.5); box-shadow: 0 0 20px rgba(0,255,204,0.1);">
-                            <span class="badge">ВХОДЯЩИЙ ЗАПРОС</span>
+                        <div class="card" style="border-color: ${nextCase.isStory ? 'var(--gold)' : 'rgba(0, 255, 204, 0.5)'}; box-shadow: 0 0 20px ${nextCase.isStory ? 'rgba(255,215,0,0.15)' : 'rgba(0,255,204,0.1)'};">
+                            ${nextCase.isStory ? '<span class="badge badge-gold">🌟 СЮЖЕТНАЯ МИССИЯ</span>' : '<span class="badge">ВХОДЯЩИЙ ЗАПРОС</span>'}
                             <h2 style="font-size:18px; margin-bottom:5px;">${nextCase.title}</h2>
                             <p style="font-size:11px; color:var(--hint); margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">${nextCase.category} • ${nextCase.difficulty}</p>
                             <button class="btn" onclick="startCase(${nextCase.id})">ОТКРЫТЬ ДЕЛО</button>
-                        </div>
-
-                        <div class="card">
-                            <h3 style="font-size:12px; color:var(--hint); letter-spacing:1px;">ЗАКРЫТЫЕ ДЕЛА</h3>
-                            ${CASES_DB.slice(Math.max(0, nextCase.id - 6), nextCase.id - 1).reverse().map(c => `
-                                <div style="font-size:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05); color:var(--hint); display:flex; justify-content:space-between;">
-                                    <span style="color:var(--success)">✓ ${c.title}</span>
-                                    <span>${c.category}</span>
-                                </div>
-                            `).join('') || '<p style="font-size:12px; color:var(--hint);">Архив пуст</p>'}
                         </div>
                     </div>
                 `;
             } 
             else if (currentTab === 'shop') {
+                const hasRev = player.tools.includes('Reverse Image');
+                const hasBot = player.tools.includes('Анти-бот');
+                const hasGeo = player.tools.includes('Гео-модуль');
+
                 content.innerHTML = `
                     <div class="animate">
                         <h1>🛒 ЧЕРНЫЙ РЫНОК</h1>
                         <div class="card">
-                            <h3>🧠 Нейро-сканер</h3>
-                            <p style="font-size:12px; color:var(--hint);">Поиск скрытых ботов. (Скоро)</p>
-                            <button class="btn btn-outline" onclick="tg.showAlert('В разработке')">10000 ₽</button>
+                            <h3>🖼 Reverse Image (1000 ₽)</h3>
+                            <p style="font-size:12px; color:var(--hint);">Помогает в кейсах HUMINT.</p>
+                            <button class="btn ${hasRev ? 'btn-disabled' : ''}" onclick="buyTool('Reverse Image', 1000)">
+                                ${hasRev ? '✅ КУПЛЕНО' : 'КУПИТЬ'}
+                            </button>
+                        </div>
+                        <div class="card">
+                            <h3>🧠 Анти-бот (1500 ₽)</h3>
+                            <p style="font-size:12px; color:var(--hint);">Подсвечивает ответ в HUMINT.</p>
+                            <button class="btn ${hasBot ? 'btn-disabled' : ''}" onclick="buyTool('Анти-бот', 1500)">
+                                ${hasBot ? '✅ КУПЛЕНО' : 'КУПИТЬ'}
+                            </button>
+                        </div>
+                        <div class="card">
+                            <h3>🗺 Гео-модуль (2000 ₽)</h3>
+                            <p style="font-size:12px; color:var(--hint);">Подсказка в GEOINT.</p>
+                            <button class="btn ${hasGeo ? 'btn-disabled' : ''}" onclick="buyTool('Гео-модуль', 2000)">
+                                ${hasGeo ? '✅ КУПЛЕНО' : 'КУПИТЬ'}
+                            </button>
                         </div>
                     </div>
                 `;
             }
             else if (currentTab === 'profile') {
                 const rank = player.level < 5 ? 'СТАЖЕР' : player.level < 15 ? 'АНАЛИТИК' : player.level < 30 ? 'СПЕЦИАЛИСТ' : 'ТЕНЕВОЙ АРХИТЕКТОР';
-                
                 content.innerHTML = `
                     <div class="animate">
                         <h1>👤 ДОСЬЕ АГЕНТА</h1>
@@ -220,19 +283,14 @@
                             <h2 style="color:var(--primary); font-family:monospace;">ID: ${tg.initDataUnsafe?.user?.id || '008'}</h2>
                             <p style="color:var(--text); font-weight:900; letter-spacing:2px; margin-top:5px; font-size:14px;">${rank}</p>
                         </div>
-                        
                         <div class="card">
                             <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px; text-align:center;">
                                 <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:10px;"><span style="font-size:20px;">💰</span><br><b style="font-size:14px;">${player.money} ₽</b></div>
                                 <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:10px;"><span style="font-size:20px;">🎖</span><br><b style="font-size:14px;">${player.reputation}</b></div>
                                 <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:10px;"><span style="font-size:20px;">⭐</span><br><b style="font-size:14px;">${player.stars}</b></div>
                             </div>
-                            
-                            <h3 style="font-size:11px; margin-top:20px; color:var(--hint); letter-spacing:1px;">ПРОГРЕСС ДО ЗВЕЗДЫ</h3>
-                            <div class="progress-container">
-                                <div class="progress-bg"><div class="progress-fill" style="width: ${(player.completedCases.length % 40) / 40 * 100}%"></div></div>
-                            </div>
-                            <p style="font-size:10px; color:var(--hint); margin-top:8px; text-align:right;">${player.completedCases.length % 40} / 40</p>
+                            <h3 style="font-size:11px; margin-top:20px; color:var(--hint); letter-spacing:1px;">ИНВЕНТАРЬ</h3>
+                            <p style="font-size:13px; color:var(--primary);">${player.tools.length ? player.tools.join(', ') : 'Нет тулзов'}</p>
                         </div>
                     </div>
                 `;
@@ -248,18 +306,32 @@
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('soft');
         }
 
+        function buyTool(name, price) {
+            if (player.money >= price) {
+                player.money -= price;
+                player.tools.push(name);
+                save();
+                render();
+                tg.showAlert(`Успешно куплено: ${name}!`);
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            } else {
+                tg.showAlert("Недостаточно средств!");
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+            }
+        }
+
         function startCase(id) {
-            activeCase = CASES_DB.find(c => c.id === id);
+            activeCase = STORY_CASES.find(c => c.id === id) || CASES_DB.find(c => c.id === id);
             foundClues.clear();
             
             document.getElementById('main-content').innerHTML = `
                 <div class="animate">
                     <div class="app-header">
                         <button class="back-btn" onclick="currentTab='cases'; render();">←</button>
-                        <h2 style="font-size:18px; margin:0; font-family:monospace; color:var(--primary);">ДЕЛО #${activeCase.id}</h2>
+                        <h2 style="font-size:18px; margin:0; font-family:monospace; color:${activeCase.isStory ? 'var(--gold)' : 'var(--primary)'};">ДЕЛО #${activeCase.id}</h2>
                     </div>
-                    <div class="card" style="border-left: 4px solid var(--secondary);">
-                        <span class="badge badge-hard">${activeCase.category}</span>
+                    <div class="card" style="border-left: 4px solid ${activeCase.isStory ? 'var(--gold)' : 'var(--secondary)'};">
+                        <span class="badge ${activeCase.isStory ? 'badge-gold' : 'badge-hard'}">${activeCase.category}</span>
                         <p style="font-size:14px; margin-top:10px; line-height:1.5;">${activeCase.brief}</p>
                         
                         <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--glass-border);">
@@ -315,93 +387,43 @@
             toggleNotebook();
         }
 
+        // --- ДОКАЗАТЕЛЬСТВА ---
         function openGeoEvidence(city, total) {
+            const geoHint = player.tools.includes('Гео-модуль') 
+                ? `<p style="color:var(--primary); font-size:12px; margin-bottom:10px;">[ГЕО-МОДУЛЬ]: Город: <span class="interactive found">${city}</span></p>` 
+                : `<p style="font-size:13px; line-height:1.6;">Спутник зафиксировал локацию: <span class="interactive" onclick="addClue('Город: ${city}')">${city}</span></p>`;
             let extraClues = '';
-            for(let i=1; i<total; i++) {
-                extraClues += `<p style="font-size:13px; margin-bottom:10px; cursor:pointer;" onclick="addClue('Архитектурный маркер #${i}')"><span class="interactive">Скрытая деталь #${i}</span> (обработать)</p>`;
-            }
-            showBrowser(`
-                <div class="terminal-window animate">
-                    <div class="terminal-header"><div class="terminal-dot" style="background:#ff5f56"></div><div class="terminal-dot" style="background:#ffbd2e"></div><div class="terminal-dot" style="background:#27c93f"></div></div>
-                    <div class="terminal-body">
-                        <div class="terminal-line term-green">> ЗАПУСК GEOINT_MODULE v6.0...</div>
-                        <div class="terminal-line">> Извлечение метаданных фото...</div>
-                    </div>
-                </div>
-                <div class="card" style="background:#0f172a; padding:15px;">
-                    <p style="font-size:13px; line-height:1.6;">Спутник зафиксировал уникальное строение. База данных дает локацию: <span class="interactive" onclick="addClue('Город: ${city}')">${city}</span></p>
-                    ${extraClues}
-                </div>
-            `);
+            for(let i=1; i<total; i++) extraClues += `<p style="font-size:13px; margin-bottom:10px; cursor:pointer;" onclick="addClue('Архитектурный маркер #${i}')"><span class="interactive">Скрытая деталь #${i}</span> (обработать)</p>`;
+            showBrowser(`<div class="terminal-window"><div class="terminal-header"><div class="terminal-dot" style="background:#ff5f56"></div><div class="terminal-dot" style="background:#ffbd2e"></div><div class="terminal-dot" style="background:#27c93f"></div></div><div class="terminal-body"><div class="terminal-line term-green">> ЗАПУСК GEOINT...</div></div></div><div class="card" style="background:#0f172a; padding:15px;">${geoHint}${extraClues}</div>`);
         }
 
         function openPlaneEvidence(plane, total) {
             let extraClues = '';
-            for(let i=1; i<total; i++) {
-                extraClues += `<p style="font-size:13px; margin-bottom:10px; cursor:pointer;" onclick="addClue('Характеристика ${i}')"><span class="interactive">Данные двигателя #${i}</span> (обработать)</p>`;
-            }
-            showBrowser(`
-                <div class="terminal-window animate">
-                    <div class="terminal-header"><div class="terminal-dot" style="background:#ff5f56"></div><div class="terminal-dot" style="background:#ffbd2e"></div><div class="terminal-dot" style="background:#27c93f"></div></div>
-                    <div class="terminal-body">
-                        <div class="terminal-line term-green">> РАДАР АКТИВЕН...</div>
-                        <div class="terminal-line">> Захват цели...</div>
-                    </div>
-                </div>
-                <div class="card" style="background:#0f172a; padding:15px;">
-                    <p style="font-size:13px; line-height:1.6;">Анализ теплового следа указывает на модель: <span class="interactive" onclick="addClue('Модель: ${plane}')">${plane}</span></p>
-                    ${extraClues}
-                </div>
-            `);
+            for(let i=1; i<total; i++) extraClues += `<p style="font-size:13px; margin-bottom:10px; cursor:pointer;" onclick="addClue('Характеристика ${i}')"><span class="interactive">Данные двигателя #${i}</span> (обработать)</p>`;
+            showBrowser(`<div class="terminal-window"><div class="terminal-header"><div class="terminal-dot" style="background:#ff5f56"></div><div class="terminal-dot" style="background:#ffbd2e"></div><div class="terminal-dot" style="background:#27c93f"></div></div><div class="terminal-body"><div class="terminal-line term-green">> РАДАР АКТИВЕН...</div></div></div><div class="card" style="background:#0f172a; padding:15px;"><p style="font-size:13px; line-height:1.6;">Модель: <span class="interactive" onclick="addClue('Модель: ${plane}')">${plane}</span></p>${extraClues}</div>`);
         }
 
         function openHumanEvidence(name, total) {
+            const botHint = player.tools.includes('Анти-бот') 
+                ? `<p style="color:var(--primary); font-size:12px; margin-bottom:10px;">[АНТИ-БОТ]: Это <span class="interactive found">бот</span></p>` 
+                : `<p style="font-size:13px; line-height:1.6;">Анализ: <span class="interactive" onclick="addClue('Текст сгенерирован ИИ')">неестественные паттерны речи</span></p>`;
             let extraClues = '';
-            for(let i=1; i<total; i++) {
-                extraClues += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #222; cursor:pointer;" onclick="addClue('Подозрительный паттерн #${i}')"><span style="font-size:13px;">Пост #${i}</span><span class="interactive" style="font-size:12px;">Анализ</span></div>`;
-            }
-            showBrowser(`
-                <div class="card" style="background:#0f172a; padding:15px;">
-                    <div style="display:flex; gap:15px; align-items:center; margin-bottom:15px;">
-                        <div style="width:50px; height:50px; background:linear-gradient(135deg, var(--primary), var(--secondary)); border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:20px;">👤</div>
-                        <div>
-                            <p style="margin:0; font-weight:bold; font-size:15px;">${name}</p>
-                            <p style="margin:2px 0 0 0; font-size:11px; color:var(--primary);">@${name.toLowerCase()}_${activeCase.id}</p>
-                        </div>
-                    </div>
-                    <p style="font-size:13px; line-height:1.6;">Главная улика: <span class="interactive" onclick="addClue('Текст сгенерирован ИИ')">неестественные паттерны речи</span></p>
-                    ${extraClues}
-                </div>
-            `);
+            for(let i=1; i<total; i++) extraClues += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #222; cursor:pointer;" onclick="addClue('Подозрительный паттерн #${i}')"><span style="font-size:13px;">Пост #${i}</span><span class="interactive" style="font-size:12px;">Анализ</span></div>`;
+            showBrowser(`<div class="card" style="background:#0f172a; padding:15px;"><div style="display:flex; gap:15px; align-items:center; margin-bottom:15px;"><div style="width:50px; height:50px; background:linear-gradient(135deg, var(--primary), var(--secondary)); border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:20px;">👤</div><div><p style="margin:0; font-weight:bold; font-size:15px;">${name}</p></div></div>${botHint}${extraClues}</div>`);
         }
 
         function toggleNotebook() {
             const modal = document.getElementById('modal-overlay');
             const content = document.getElementById('modal-content');
-            content.innerHTML = `
-                <h2 style="color:var(--primary);">📓 УЛИКИ (${foundClues.size}/${activeCase.totalClues})</h2>
-                <div style="margin-bottom:20px; max-height:200px; overflow-y:auto;">
-                    ${Array.from(foundClues).map(c => `<div class="clue-item">✅ ${c}</div>`).join('') || '<p style="color:var(--hint);">Пока пусто...</p>'}
-                </div>
-                <button class="btn btn-outline" onclick="document.getElementById('modal-overlay').classList.remove('active')">ЗАКРЫТЬ</button>
-            `;
+            content.innerHTML = `<h2 style="color:var(--primary);">📓 УЛИКИ (${foundClues.size}/${activeCase.totalClues})</h2><div style="margin-bottom:20px; max-height:200px; overflow-y:auto;">${Array.from(foundClues).map(c => `<div class="clue-item">✅ ${c}</div>`).join('') || '<p style="color:var(--hint);">Пока пусто...</p>'}</div><button class="btn btn-outline" onclick="document.getElementById('modal-overlay').classList.remove('active')">ЗАКРЫТЬ</button>`;
             modal.classList.add('active');
         }
 
         function openReport() {
             if (foundClues.size < activeCase.totalClues) return;
-
             const modal = document.getElementById('modal-overlay');
             const content = document.getElementById('modal-content');
-            content.innerHTML = `
-                <h2 style="color:var(--secondary);">ВЕРДИКТ</h2>
-                <p style="font-size:14px; margin-bottom:20px; color:var(--hint);">${activeCase.questions[0].text}</p>
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    ${activeCase.questions[0].answers.map(a => `
-                        <button class="btn ${a.correct ? 'btn-success' : 'btn-outline'}" onclick="submitAnswer(${a.correct})">${a.t}</button>
-                    `).join('')}
-                </div>
-            `;
+            content.innerHTML = `<h2 style="color:var(--secondary);">ВЕРДИКТ</h2><p style="font-size:14px; margin-bottom:20px; color:var(--hint);">${activeCase.questions[0].text}</p><div style="display:flex; flex-direction:column; gap:10px;">${activeCase.questions[0].answers.map(a => `<button class="btn ${a.correct ? 'btn-success' : 'btn-outline'}" onclick="submitAnswer(${a.correct})">${a.t}</button>`).join('')}</div>`;
             modal.classList.add('active');
         }
 
@@ -417,33 +439,24 @@
                 let gotStar = false;
                 if (!player.completedCases.includes(activeCase.id)) {
                     player.completedCases.push(activeCase.id);
+                    
+                    if (activeCase.isStory) {
+                        player.storyDone = (player.storyDone || 0) + 1;
+                    } else {
+                        player.baseCasesDone = (player.baseCasesDone || 0) + 1;
+                    }
+
                     if (player.completedCases.length % 40 === 0) { player.stars += 1; gotStar = true; }
                     if (player.completedCases.length % 5 === 0) player.level++;
                 }
                 save();
                 
-                content.innerHTML = `
-                    <div style="text-align:center;">
-                        <div style="font-size:60px; margin-bottom:10px;">✅</div>
-                        <h2 style="color:var(--success);">ДЕЛО ЗАКРЫТО</h2>
-                        <p style="font-size:14px; margin:15px 0;">Награда:<br><b style="color:var(--primary); font-size:18px;">+${activeCase.reward.money} ₽</b></p>
-                        ${gotStar ? '<p style="color:var(--gold); font-size:18px; font-weight:bold;">🌟 ПОЛУЧЕНА ЗВЕЗДА! 🌟</p>' : ''}
-                        <button class="btn" style="margin-top:20px;" onclick="document.getElementById('modal-overlay').classList.remove('active'); currentTab='cases'; render();">ПРОДОЛЖИТЬ</button>
-                    </div>
-                `;
+                content.innerHTML = `<div style="text-align:center;"><div style="font-size:60px; margin-bottom:10px;">✅</div><h2 style="color:var(--success);">ДЕЛО ЗАКРЫТО</h2><p style="font-size:14px; margin:15px 0;">Награда:<br><b style="color:var(--primary); font-size:18px;">+${activeCase.reward.money} ₽</b></p>${gotStar ? '<p style="color:var(--gold); font-size:18px; font-weight:bold;">🌟 ЗВЕЗДА! 🌟</p>' : ''}<button class="btn" style="margin-top:20px;" onclick="document.getElementById('modal-overlay').classList.remove('active'); currentTab='cases'; render();">ПРОДОЛЖИТЬ</button></div>`;
             } else {
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                // Штраф и возврат в кейс (без поломки прогресса)
                 player.reputation = Math.max(0, player.reputation - 10);
                 save();
-                content.innerHTML = `
-                    <div style="text-align:center;">
-                        <div style="font-size:60px; margin-bottom:10px;">❌</div>
-                        <h2 style="color:var(--danger);">ОШИБКА</h2>
-                        <p style="font-size:14px; color:var(--hint); margin:15px 0;">Вывод неверен. Ты потерял 10 репутации. Изучи улики внимательнее.</p>
-                        <button class="btn btn-outline" style="margin-top:10px;" onclick="document.getElementById('modal-overlay').classList.remove('active')">ПОПРОБОВАТЬ СНОВА</button>
-                    </div>
-                `;
+                content.innerHTML = `<div style="text-align:center;"><div style="font-size:60px; margin-bottom:10px;">❌</div><h2 style="color:var(--danger);">ОШИБКА</h2><p style="font-size:14px; color:var(--hint); margin:15px 0;">-10 репутации.</p><button class="btn btn-outline" style="margin-top:10px;" onclick="document.getElementById('modal-overlay').classList.remove('active')">ПОПРОБОВАТЬ СНОВА</button></div>`;
             }
         }
 
